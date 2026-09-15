@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="mb-0">Kiralamalar</h2>
+    <div class="d-flex align-items-center gap-2">
+        <div class="view-toggle">
+            <button type="button" data-view="table" class="active">Tablo</button>
+            <button type="button" data-view="calendar">Takvim</button>
+        </div>
+        {% if user.is_admin_role or user.is_operasyon_role %}
+        <a href="{% url 'rentals:create' %}" class="btn btn-primary">Yeni Kiralama</a>
+        {% endif %}
+    </div>
+</div>
+
+<div id="rentalsTableView">
+    <form method="get" class="row g-2 mb-3">
+        <div class="col-auto">
+            <select name="durum" class="form-select" onchange="this.form.submit()">
+                <option value="">Tüm Durumlar</option>
+                {% for value, label in status_choices %}
+                    <option value="{{ value }}" {% if value == selected_status %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+    </form>
+
+    <div class="panel-card p-3">
+        <table class="table app-table mb-0">
+            <thead>
+                <tr><th>Kiralama No</th><th>Araç</th><th>Müşteri</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th><th>Ödeme</th><th>Tutar</th><th></th></tr>
+            </thead>
+            <tbody>
+            {% for r in rentals %}
+                <tr>
+                    <td>{{ r.rental_no }}</td>
+                    <td>{{ r.vehicle.plate }}</td>
+                    <td>{{ r.customer.full_name }}</td>
+                    <td>{{ r.start_date }}</td>
+                    <td>{{ r.end_date }}</td>
+                    <td><span class="status-badge status-{{ r.status }}">{{ r.get_status_display }}</span></td>
+                    <td><span class="payment-badge payment-{{ r.payment_badge_status }}">{{ r.payment_badge_label }}</span></td>
+                    <td>{{ r.total_price }} TL</td>
+                    <td><a href="{% url 'rentals:detail' r.pk %}" class="btn btn-sm btn-outline-secondary">Detay</a></td>
+                </tr>
+            {% empty %}
+                <tr><td colspan="9" class="text-secondary">Kayıt bulunamadı.</td></tr>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div id="rentalsCalendarView" style="display:none;">
+    <form method="get" class="gantt-toolbar">
+        <input type="hidden" name="view" value="calendar">
+        <input type="hidden" name="periyot" value="{{ cal_period }}">
+        <div class="view-toggle">
+            <button type="submit" name="periyot" value="hafta" class="{% if cal_period == 'hafta' %}active{% endif %}">Hafta</button>
+            <button type="submit" name="periyot" value="ay" class="{% if cal_period == 'ay' %}active{% endif %}">Ay</button>
+        </div>
+        <div class="gantt-nav">
+            <a href="?view=calendar&periyot={{ cal_period }}&baslangic={{ cal_prev_start }}{% if cal_vehicle_status_filter %}&arac_durum={{ cal_vehicle_status_filter }}{% endif %}">&larr;</a>
+            <span class="gantt-range-label">{{ cal_range_start|date:"d M" }} — {{ cal_range_end|date:"d M Y" }}</span>
+            <a href="?view=calendar&periyot={{ cal_period }}&baslangic={{ cal_next_start }}{% if cal_vehicle_status_filter %}&arac_durum={{ cal_vehicle_status_filter }}{% endif %}">&rarr;</a>
+        </div>
+        <select name="arac_durum" class="form-select" style="max-width:220px;" onchange="this.form.submit()">
+            <option value="">Tüm Araçlar</option>
+            {% for value, label in vehicle_status_choices %}
+                <option value="{{ value }}" {% if value == cal_vehicle_status_filter %}selected{% endif %}>{{ label }}</option>
+            {% endfor %}
+        </select>
+    </form>
+
+    <div class="gantt-container">
+        <div class="gantt-grid" style="--days: {{ cal_total_cols }};">
+            <div class="gantt-row" style="display:grid; grid-template-columns: 190px repeat({{ cal_total_cols }}, minmax(46px, 1fr));">
+                <div class="gantt-corner">Araç</div>
+                {% for d in cal_days %}
+                    <div class="gantt-cell-header {% if d.is_weekend %}is-weekend{% endif %} {% if d.is_today %}is-today{% endif %}">{{ d.label }}<br>{{ d.date|date:"d.m" }}</div>
+                {% endfor %}
+            </div>
+            {% for row in cal_vehicle_rows %}
+            <div class="gantt-row" style="display:grid; grid-template-columns: 190px repeat({{ cal_total_cols }}, minmax(46px, 1fr));">
+                <div class="gantt-vehicle-cell">
+                    <span class="plate">{{ row.vehicle.plate }}</span>
+                    <span class="model">{{ row.vehicle.brand }} {{ row.vehicle.model_name }}</span>
+                </div>
+                {% for d in cal_days %}
+                    <a class="gantt-track-cell gantt-empty-link {% if d.is_weekend %}is-weekend{% endif %}"
+                       href="{% url 'rentals:create' %}?arac={{ row.vehicle.id }}&baslangic={{ d.date|date:'Y-m-d' }}"
+                       title="Yeni kiralama: {{ row.vehicle.plate }} — {{ d.date|date:'d.m.Y' }}"></a>
+                {% endfor %}
+                {% for bar in row.bars %}
+                    <div class="gantt-bar bar-{{ bar.rental.status }}{% if bar.conflict %} bar-conflict{% endif %}"
+                         style="grid-column: {{ bar.col_start }} / {{ bar.col_end }};"
+                         data-rental-no="{{ bar.rental.rental_no }}"
+                         data-plate="{{ bar.rental.vehicle.plate }}"
+                         data-vehicle="{{ bar.rental.vehicle.brand }} {{ bar.rental.vehicle.model_name }}"
+                         data-customer="{{ bar.rental.customer.full_name }}"
+                         data-start="{{ bar.rental.start_date|date:'d.m.Y' }}"
+                         data-end="{{ bar.rental.end_date|date:'d.m.Y' }}"
+                         data-days="{{ bar.rental.rental_days }}"
+                         data-price="{{ bar.rental.total_price }}"
+                         data-status="{{ bar.rental.get_status_display }}"
+                         data-payment="{{ bar.rental.get_payment_status_display }}"
+                         data-detail-url="{% url 'rentals:detail' bar.rental.pk %}"
+                         title="{{ bar.rental.customer.full_name }} ({{ bar.rental.start_date|date:'d.m' }} - {{ bar.rental.end_date|date:'d.m' }})">
+                        {{ bar.rental.vehicle.plate }}
+                        {% if bar.rental.payment_status != "ODENDI" %}<span class="pay-flag"></span>{% endif %}
+                    </div>
+                {% endfor %}
+            </div>
+            {% empty %}
+            <div class="p-4 text-secondary">Gösterilecek araç yok.</div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="gantt-legend">
+        <span><i style="background:var(--status-reserve)"></i> Rezerve</span>
+        <span><i style="background:var(--status-active)"></i> Devam Ediyor</span>
+        <span><i style="background:var(--status-completed)"></i> Tamamlandı</span>
+        <span><i style="background:var(--status-cancelled)"></i> İptal Edildi</span>
+        <span><span class="pay-flag" style="position:static; background:#fff; box-shadow:0 0 0 2px var(--border-strong);"></span> Ödeme bekliyor</span>
+    </div>
+</div>
+
+<div class="slideover-backdrop" id="slideoverBackdrop"></div>
+<div class="slideover-panel" id="slideoverPanel">
+    <div class="slideover-header">
+        <strong>Kiralama Önizleme</strong>
+        <button type="button" class="slideover-close" id="slideoverCloseBtn">&times;</button>
+    </div>
+    <div class="slideover-body" id="slideoverBody"></div>
+    <div class="slideover-footer">
+        <a href="#" id="slideoverDetailLink" class="btn btn-primary flex-fill">Tam Detay</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/gantt.js' %}"></script>
+{% endblock %}

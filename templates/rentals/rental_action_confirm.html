@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+<p>{{ rental.vehicle.plate }} — {{ rental.customer.full_name }} ({{ rental.start_date }} - {{ rental.end_date }})</p>
+<form method="post">
+    {% csrf_token %}
+    <div class="mb-3">
+        <label class="form-label" for="km">{{ field_label }}</label>
+        <input type="number" min="0" class="form-control" id="km" name="km" value="{{ current_km|default_if_none:'' }}">
+    </div>
+    <button type="submit" class="btn btn-success">Onayla</button>
+    <a href="{% url 'rentals:detail' rental.pk %}" class="btn btn-secondary">Vazgeç</a>
+</form>
+{% endblock %}

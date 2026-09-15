@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+<form method="post" novalidate>
+    {% csrf_token %}
+    {{ form.as_p }}
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+    <a href="{% url 'vehicles:list' %}" class="btn btn-secondary">Vazgeç</a>
+</form>
+{% endblock %}

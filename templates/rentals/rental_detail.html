@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>Kiralama Detayı</h2>
+    <div>
+        {% if user.is_admin_role or user.is_operasyon_role %}
+        <a href="{% url 'rentals:update' rental.pk %}" class="btn btn-outline-secondary">Düzenle</a>
+        {% endif %}
+        <a href="{% url 'rentals:list' %}" class="btn btn-secondary">Listeye Dön</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Kiralama No / Sözleşme No</dt><dd class="col-sm-9"><strong>{{ rental.rental_no }}</strong></dd>
+            <dt class="col-sm-3">Araç</dt><dd class="col-sm-9">{{ rental.vehicle.plate }} — {{ rental.vehicle.brand }} {{ rental.vehicle.model_name }}</dd>
+            <dt class="col-sm-3">Müşteri</dt><dd class="col-sm-9">{{ rental.customer.full_name }} ({{ rental.customer.phone }})</dd>
+            <dt class="col-sm-3">Aracı Kullanacak Kişi</dt><dd class="col-sm-9">
+                {% if rental.driver %}
+                    {{ rental.driver.full_name }}
+                    {% if rental.driver.tc_no %}— T.C. {{ rental.driver.tc_no }}{% elif rental.driver.passport_no %}— Pasaport {{ rental.driver.passport_no }}{% endif %}
+                    {% if rental.driver.license_no %}— Ehliyet No: {{ rental.driver.license_no }}{% else %}<span class="text-warning">— Ehliyet no girilmemiş</span>{% endif %}
+                {% else %}
+                    <span class="text-secondary">Belirtilmemiş</span>
+                {% endif %}
+            </dd>
+            <dt class="col-sm-3">Tarih Aralığı</dt><dd class="col-sm-9">{{ rental.start_date }} - {{ rental.end_date }} ({{ rental.rental_days }} gün)</dd>
+            <dt class="col-sm-3">Fiyatlandırma</dt><dd class="col-sm-9">{{ rental.get_pricing_type_display }} — Günlük {{ rental.daily_price_snapshot }} TL</dd>
+            <dt class="col-sm-3">Toplam Tutar</dt><dd class="col-sm-9">{{ rental.total_price }} TL</dd>
+            <dt class="col-sm-3">Ödeme Durumu</dt><dd class="col-sm-9"><span class="payment-badge payment-{{ rental.payment_badge_status }}">{{ rental.payment_badge_label }}</span> ({{ rental.paid_amount }} TL ödendi)</dd>
+            <dt class="col-sm-3">Durum</dt><dd class="col-sm-9"><span class="status-badge status-{{ rental.status }}">{{ rental.get_status_display }}</span></dd>
+            <dt class="col-sm-3">Teslim Km</dt><dd class="col-sm-9">{{ rental.delivery_km|default:"-" }}</dd>
+            <dt class="col-sm-3">İade Km</dt><dd class="col-sm-9">{{ rental.return_km|default:"-" }}</dd>
+            {% if rental.is_below_minimum_days %}
+            <dt class="col-sm-3"></dt><dd class="col-sm-9 text-warning">Not: Asgari {{ min_rental_days }} günlük kiralama kuralının altında (yalnızca bilgilendirme, kayıt engellenmez).</dd>
+            {% endif %}
+        </dl>
+    </div>
+</div>
+
+{% if user.is_admin_role or user.is_operasyon_role %}
+<div class="d-flex gap-2">
+    {% if rental.status == "REZERVE" %}
+        <a href="{% url 'rentals:deliver' rental.pk %}" class="btn btn-success">Araç Teslim Et</a>
+    {% endif %}
+    {% if rental.status == "DEVAM_EDIYOR" %}
+        <a href="{% url 'rentals:return' rental.pk %}" class="btn btn-success">Araç İade Al</a>
+    {% endif %}
+    {% if rental.status == "REZERVE" or rental.status == "DEVAM_EDIYOR" %}
+        <form method="post" action="{% url 'rentals:cancel' rental.pk %}" onsubmit="return confirm('Kiralamayı iptal etmek istediğinize emin misiniz?');">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">İptal Et</button>
+        </form>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

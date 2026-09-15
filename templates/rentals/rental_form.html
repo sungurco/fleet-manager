@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+
+<div class="rental-form-layout">
+    <form method="post" novalidate id="rentalForm">
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>
+        {% endif %}
+
+        <div class="mb-3 searchable-select">
+            <label class="form-label">Araç</label>
+            <input type="text" class="form-control" id="vehicle_search" placeholder="Plaka veya marka/model ile ara..." autocomplete="off">
+            <div class="searchable-dropdown" id="vehicle_dropdown"></div>
+            {{ form.vehicle }}
+            {% if form.vehicle.errors %}<div class="text-danger small">{{ form.vehicle.errors|striptags }}</div>{% endif %}
+            <div class="vehicle-status-warning" id="vehicleStatusWarning"></div>
+        </div>
+
+        <div class="mb-3 searchable-select">
+            <label class="form-label">Müşteri</label>
+            <input type="text" class="form-control" id="customer_search" placeholder="Ad Soyad veya Firma Unvanı ile ara..." autocomplete="off">
+            <div class="searchable-dropdown" id="customer_dropdown"></div>
+            {{ form.customer }}
+            {% if form.customer.errors %}<div class="text-danger small">{{ form.customer.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.driver.id_for_label }}">Aracı Kullanacak Kişi</label>
+            {{ form.driver }}
+            <div class="license-warning" id="driverLicenseWarning">Bu sürücü için ehliyet no girilmemiş.</div>
+            <button type="button" class="btn btn-sm btn-outline-secondary mt-2" id="quickAddDriverToggle">+ Yeni Sürücü Ekle</button>
+            <div class="quick-add-panel" id="quickAddDriverPanel">
+                <div class="row g-2">
+                    <div class="col-md-6"><input type="text" class="form-control form-control-sm" id="quickDriverName" placeholder="Ad Soyad *"></div>
+                    <div class="col-md-6"><input type="text" class="form-control form-control-sm" id="quickDriverLicense" placeholder="Ehliyet No"></div>
+                    <div class="col-md-6"><input type="text" class="form-control form-control-sm" id="quickDriverTc" placeholder="T.C. Kimlik No" maxlength="11"></div>
+                    <div class="col-md-6"><input type="text" class="form-control form-control-sm" id="quickDriverPassport" placeholder="Pasaport No"></div>
+                </div>
+                <div class="quick-add-error" id="quickAddDriverError"></div>
+                <button type="button" class="btn btn-sm btn-primary mt-2" id="quickAddDriverSubmit">Sürücüyü Kaydet</button>
+            </div>
+            {% if form.driver.errors %}<div class="text-danger small">{{ form.driver.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.start_date.id_for_label }}">{{ form.start_date.label }}</label>
+                {{ form.start_date }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.end_date.id_for_label }}">{{ form.end_date.label }}</label>
+                {{ form.end_date }}
+                <div class="date-warning" id="dateWarning">Bitiş tarihi başlangıçtan sonra olmalı.</div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.pricing_type.id_for_label }}">{{ form.pricing_type.label }}</label>
+            {{ form.pricing_type }}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.daily_price_snapshot.id_for_label }}">{{ form.daily_price_snapshot.label }}</label>
+                {{ form.daily_price_snapshot }}
+                {% if form.daily_price_snapshot.errors %}<div class="text-danger small">{{ form.daily_price_snapshot.errors|striptags }}</div>{% endif %}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.total_price.id_for_label }}">{{ form.total_price.label }}</label>
+                {{ form.total_price }}
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
+            {{ form.status }}
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.payment_status.id_for_label }}">{{ form.payment_status.label }}</label>
+                {{ form.payment_status }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.paid_amount.id_for_label }}">{{ form.paid_amount.label }}</label>
+                {{ form.paid_amount }}
+            </div>
+        </div>
+
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.delivery_km.id_for_label }}">{{ form.delivery_km.label }}</label>
+                {{ form.delivery_km }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.return_km.id_for_label }}">{{ form.return_km.label }}</label>
+                {{ form.return_km }}
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+        <a href="{% url 'rentals:list' %}" class="btn btn-secondary">Vazgeç</a>
+    </form>
+
+    <div class="rental-summary-box">
+        <h6>KİRALAMA ÖZETİ</h6>
+        <div class="rental-summary-item">
+            <div class="rental-summary-label">Gün Sayısı</div>
+            <div class="rental-summary-value" id="summaryDays">-</div>
+        </div>
+        <div class="rental-summary-item">
+            <div class="rental-summary-label">Önerilen Tutar</div>
+            <div class="rental-summary-value" id="summarySuggested">-</div>
+        </div>
+        <div class="rental-summary-item">
+            <div class="rental-summary-label">Girilen Toplam Tutar</div>
+            <div class="rental-summary-value" id="summaryEntered">-</div>
+            <div class="rental-summary-note" id="summaryNote"></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.RENTAL_FORM_DATA = {
+        vehicles: {{ vehicles_json|safe }},
+        customers: {{ customers_json|safe }},
+        drivers: {{ drivers_json|safe }}
+    };
+</script>
+<script src="{% static 'js/rental_form.js' %}"></script>
+{% endblock %}

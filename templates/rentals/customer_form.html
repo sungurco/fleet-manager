@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+<form method="post" novalidate id="customerForm"
+      data-check-url="{% url 'rentals:customer_duplicate_check' %}"
+      data-customer-id="{{ form.instance.pk|default_if_none:'' }}">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>
+    {% endif %}
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.customer_type.id_for_label }}">{{ form.customer_type.label }}</label>
+        {{ form.customer_type }}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.full_name.id_for_label }}">{{ form.full_name.label }}</label>
+        {{ form.full_name }}
+        {% if form.full_name.errors %}<div class="text-danger small">{{ form.full_name.errors|striptags }}</div>{% endif %}
+    </div>
+
+    <div id="sahisFields">
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.tc_no.id_for_label }}">{{ form.tc_no.label }}</label>
+            {{ form.tc_no }}
+            <div class="field-warning" id="tcNoWarning"></div>
+            {% if form.tc_no.errors %}<div class="text-danger small">{{ form.tc_no.errors|striptags }}</div>{% endif %}
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="{{ form.phone.id_for_label }}">{{ form.phone.label }}</label>
+            {{ form.phone }}
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label" for="{{ form.email.id_for_label }}">{{ form.email.label }}</label>
+            {{ form.email }}
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
+        {{ form.address }}
+    </div>
+
+    <div id="tuzelFields" class="panel-card p-3 mb-3">
+        <h5 class="mb-3">Kurumsal Bilgiler</h5>
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.company_title.id_for_label }}">{{ form.company_title.label }}</label>
+            {{ form.company_title }}
+            {% if form.company_title.errors %}<div class="text-danger small">{{ form.company_title.errors|striptags }}</div>{% endif %}
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.tax_office.id_for_label }}">{{ form.tax_office.label }}</label>
+                {{ form.tax_office }}
+            </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.tax_no.id_for_label }}">{{ form.tax_no.label }}</label>
+                {{ form.tax_no }}
+                <div class="field-warning" id="taxNoWarning"></div>
+                {% if form.tax_no.errors %}<div class="text-danger small">{{ form.tax_no.errors|striptags }}</div>{% endif %}
+            </div>
+        </div>
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.billing_address.id_for_label }}">{{ form.billing_address.label }}</label>
+            {{ form.billing_address }}
+        </div>
+        <div class="row">
+            <div class="col-md-4 mb-3">
+                <label class="form-label" for="{{ form.contact_person_name.id_for_label }}">{{ form.contact_person_name.label }}</label>
+                {{ form.contact_person_name }}
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label" for="{{ form.contact_person_phone.id_for_label }}">{{ form.contact_person_phone.label }}</label>
+                {{ form.contact_person_phone }}
+            </div>
+            <div class="col-md-4 mb-3">
+                <label class="form-label" for="{{ form.contact_person_email.id_for_label }}">{{ form.contact_person_email.label }}</label>
+                {{ form.contact_person_email }}
+            </div>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
+        {{ form.notes }}
+    </div>
+
+    <button type="submit" class="btn btn-primary">Kaydet</button>
+    <a href="{% url 'rentals:customer_list' %}" class="btn btn-secondary">Vazgeç</a>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/customer_form.js' %}"></script>
+{% endblock %}

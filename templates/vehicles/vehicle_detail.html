@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">{{ vehicle.plate }} — {{ vehicle.brand }} {{ vehicle.model_name }}</h2>
+    <div>
+        {% if user.is_admin_role or user.is_operasyon_role %}
+        <a href="{% url 'vehicles:update' vehicle.pk %}" class="btn btn-outline-secondary">Düzenle</a>
+        {% endif %}
+        <a href="{% url 'vehicles:list' %}" class="btn btn-secondary">Listeye Dön</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Durum</dt><dd class="col-sm-9"><span class="status-badge status-{{ vehicle.status }}">{{ vehicle.get_status_display }}</span></dd>
+            <dt class="col-sm-3">Model Yılı</dt><dd class="col-sm-9">{{ vehicle.year }}</dd>
+            <dt class="col-sm-3">Şase No</dt><dd class="col-sm-9">{{ vehicle.chassis_no|default:"-" }}</dd>
+            <dt class="col-sm-3">Günlük Fiyat</dt><dd class="col-sm-9">{{ vehicle.daily_price }} TL</dd>
+            <dt class="col-sm-3">Sonraki Muayene</dt><dd class="col-sm-9">{{ vehicle.inspection.next_inspection_date|default:"-" }}</dd>
+            <dt class="col-sm-3">Sonraki Bakım</dt><dd class="col-sm-9">{{ vehicle.next_maintenance_date|default:"-" }}</dd>
+            <dt class="col-sm-3">Filo Sözleşme Bitişi</dt><dd class="col-sm-9">{{ vehicle.fleet_contract_end_date|default:"-" }}</dd>
+        </dl>
+    </div>
+</div>
+
+<h4 class="mb-3">Kiralama Geçmişi</h4>
+<div class="panel-card p-3">
+    <table class="table app-table mb-0">
+        <thead>
+            <tr><th>Kiralama No</th><th>Müşteri</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th><th>Ödeme</th><th>Tutar</th><th></th></tr>
+        </thead>
+        <tbody>
+        {% for r in rentals %}
+            <tr>
+                <td>{{ r.rental_no }}</td>
+                <td>{{ r.customer.full_name }}</td>
+                <td>{{ r.start_date }}</td>
+                <td>{{ r.end_date }}</td>
+                <td><span class="status-badge status-{{ r.status }}">{{ r.get_status_display }}</span></td>
+                <td><span class="payment-badge payment-{{ r.payment_badge_status }}">{{ r.payment_badge_label }}</span></td>
+                <td>{{ r.total_price }} TL</td>
+                <td><a href="{% url 'rentals:detail' r.pk %}" class="btn btn-sm btn-outline-secondary">Detay</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="8" class="text-secondary">Bu araca ait kiralama kaydı yok.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

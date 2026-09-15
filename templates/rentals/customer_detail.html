@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">
+        {{ customer.full_name }}
+        <span class="type-badge type-{{ customer.customer_type }}">{{ customer.get_customer_type_display }}</span>
+    </h2>
+    <div>
+        <a href="{% url 'rentals:customer_update' customer.pk %}" class="btn btn-outline-secondary">Düzenle</a>
+        <a href="{% url 'rentals:customer_list' %}" class="btn btn-secondary">Listeye Dön</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body">
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Telefon</dt><dd class="col-sm-9">{{ customer.phone|default:"-" }}</dd>
+            <dt class="col-sm-3">E-posta</dt><dd class="col-sm-9">{{ customer.email|default:"-" }}</dd>
+            {% if customer.customer_type == "SAHIS" %}
+            <dt class="col-sm-3">T.C. Kimlik No</dt><dd class="col-sm-9">{{ customer.tc_no|default:"-" }}</dd>
+            {% else %}
+            <dt class="col-sm-3">Firma Unvanı</dt><dd class="col-sm-9">{{ customer.company_title|default:"-" }}</dd>
+            <dt class="col-sm-3">Vergi Dairesi / No</dt><dd class="col-sm-9">{{ customer.tax_office|default:"-" }} / {{ customer.tax_no|default:"-" }}</dd>
+            <dt class="col-sm-3">Fatura Adresi</dt><dd class="col-sm-9">{{ customer.billing_address|default:"-" }}</dd>
+            <dt class="col-sm-3">Yetkili Kişi</dt><dd class="col-sm-9">{{ customer.contact_person_name|default:"-" }} ({{ customer.contact_person_phone|default:"-" }}, {{ customer.contact_person_email|default:"-" }})</dd>
+            {% endif %}
+            <dt class="col-sm-3">Adres</dt><dd class="col-sm-9">{{ customer.address|default:"-" }}</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h4 class="mb-0">Sürücüler</h4>
+    <a href="{% url 'rentals:driver_create' customer.pk %}" class="btn btn-primary btn-sm">Yeni Sürücü</a>
+</div>
+<div class="panel-card p-3 mb-4">
+    <table class="table app-table mb-0">
+        <thead><tr><th>Ad Soyad</th><th>T.C./Pasaport</th><th>Telefon</th><th>Ehliyet No</th><th></th></tr></thead>
+        <tbody>
+        {% for d in drivers %}
+            <tr>
+                <td>{{ d.full_name }}</td>
+                <td>{{ d.tc_no|default:d.passport_no|default:"-" }}</td>
+                <td>{{ d.phone|default:"-" }}</td>
+                <td>{{ d.license_no|default:"-" }}</td>
+                <td class="text-end"><a href="{% url 'rentals:driver_update' d.pk %}" class="btn btn-sm btn-outline-secondary">Düzenle</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="5" class="text-secondary">Kayıtlı sürücü yok.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+<h4 class="mb-3">Son Kiralamalar</h4>
+<div class="panel-card p-3">
+    <table class="table app-table mb-0">
+        <thead><tr><th>Kiralama No</th><th>Araç</th><th>Başlangıç</th><th>Bitiş</th><th>Durum</th><th></th></tr></thead>
+        <tbody>
+        {% for r in rentals %}
+            <tr>
+                <td>{{ r.rental_no }}</td>
+                <td>{{ r.vehicle.plate }}</td>
+                <td>{{ r.start_date }}</td>
+                <td>{{ r.end_date }}</td>
+                <td><span class="status-badge status-{{ r.status }}">{{ r.get_status_display }}</span></td>
+                <td><a href="{% url 'rentals:detail' r.pk %}" class="btn btn-sm btn-outline-secondary">Detay</a></td>
+            </tr>
+        {% empty %}
+            <tr><td colspan="6" class="text-secondary">Kiralama kaydı yok.</td></tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-end mb-4 flex-wrap gap-2">
+    <div>
+        <h2 class="mb-1">Operasyon Merkezi</h2>
+        <div class="section-sub">Filonuzun bugünkü durumu ve dikkat gerektiren kalemler.</div>
+    </div>
+</div>
+
+<div class="kpi-row mb-4">
+    <div class="kpi-card">
+        <div class="kpi-label">Toplam Araç</div>
+        <div class="kpi-value">{{ total_vehicles }}</div>
+        <div class="kpi-sub">{{ passive_vehicles }} pasif filoda</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Müsait</div>
+        <div class="kpi-value">{{ available_vehicles }}</div>
+        <div class="kpi-sub">%{{ occupancy.available_pct }} filo oranı</div>
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Kirada</div>
+        <div class="kpi-value">{{ rented_vehicles }}</div>
+        <div class="kpi-sub">%{{ occupancy.rented_pct }} filo oranı</div>
+    </div>
+    <div class="kpi-card kpi-accent">
+        <div class="kpi-label">Bu Ay Tahsilat</div>
+        <div class="kpi-value">{{ this_month_paid|floatformat:0 }} TL</div>
+        {% if revenue_trend is not None %}
+        <div class="kpi-sub {% if revenue_trend >= 0 %}kpi-trend-up{% else %}kpi-trend-down{% endif %}">
+            {% if revenue_trend >= 0 %}▲{% else %}▼{% endif %} %{{ revenue_trend|floatformat:0 }} geçen aya göre
+        </div>
+        {% else %}
+        <div class="kpi-sub">Geçen ay verisi yok</div>
+        {% endif %}
+    </div>
+    <div class="kpi-card">
+        <div class="kpi-label">Bekleyen Tahsilat</div>
+        <div class="kpi-value">{{ pending_collection|floatformat:0 }} TL</div>
+        <div class="kpi-sub">Ödenmemiş kiralama bakiyesi</div>
+    </div>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-lg-4">
+        <div class="panel-card p-4 h-100">
+            <div class="section-title mb-3">Filo Doluluk Oranı</div>
+            <div class="donut-wrap">
+                <div class="donut" style="background: conic-gradient(var(--accent-steel) 0% {{ occupancy.rented_pct }}%, var(--status-cancelled) {{ occupancy.rented_pct }}% {{ occupancy.service_stop }}%, var(--accent-platinum) {{ occupancy.service_stop }}% 100%);">
+                    <div class="donut-center">
+                        <div class="donut-value">{{ total_vehicles }}</div>
+                        <div class="donut-label">ARAÇ</div>
+                    </div>
+                </div>
+                <div class="donut-legend">
+                    <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--accent-steel)"></span> Kirada <strong>{{ rented_vehicles }}</strong></div>
+                    <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--status-cancelled)"></span> Bakımda/Serviste <strong>{{ in_service_vehicles }}</strong></div>
+                    <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--accent-platinum)"></span> Müsait <strong>{{ available_vehicles }}</strong></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="attention-card h-100">
+            <div class="attention-header">Dikkat Gerektirenler</div>
+            <ul class="attention-list">
+            {% for item in attention_items %}
+                <li>
+                    <a class="attention-item" href="{{ item.url }}">
+                        <span class="attention-severity severity-{{ item.severity }}"></span>
+                        <span>
+                            <span class="attention-title d-block">{{ item.title }}</span>
+                            <span class="attention-meta">{{ item.meta }}</span>
+                        </span>
+                        {% if item.days_left is not None %}
+                        <span class="attention-days days-{{ item.severity }}">{{ item.days_left }} gün</span>
+                        {% endif %}
+                    </a>
+                </li>
+            {% empty %}
+                <li class="attention-empty">Şu an dikkat gerektiren bir kayıt yok.</li>
+            {% endfor %}
+            </ul>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="panel-card p-4 h-100">
+            <div class="section-title mb-3">Son Kiralamalar</div>
+            <ul class="recent-list">
+            {% for r in recent_rentals %}
+                <li class="recent-item">
+                    <span class="recent-plate">{{ r.vehicle.plate }}</span>
+                    <span class="recent-customer">{{ r.customer.full_name }}</span>
+                    <span class="status-badge status-{{ r.status }}">{{ r.get_status_display }}</span>
+                    <span class="recent-amount">{{ r.total_price|floatformat:0 }} TL</span>
+                </li>
+            {% empty %}
+                <li class="attention-empty">Henüz kiralama kaydı yok.</li>
+            {% endfor %}
+            </ul>
+            <a href="{% url 'rentals:list' %}" class="btn btn-outline-secondary btn-sm mt-3 w-100">Tüm Kiralamalar</a>
+        </div>
+    </div>
+</div>
+{% endblock %}
