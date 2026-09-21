@@ -332,4 +332,26 @@ document.addEventListener('DOMContentLoaded', function () {
         });
         updateSummary();
     }
+
+    /* ---------- Provizyon: seçilen tipin güncel tutarını bilgi amaçlı göster ---------- */
+    var provisionSelect = document.getElementById('id_provision_type');
+    var provisionInfo = document.getElementById('provisionInfo');
+    var provisionAmounts = DATA.provisionAmounts || {};
+    var provisionLabels = { EKONOMIK: 'Ekonomik Sınıf', LUKS: 'Lüks Sınıf' };
+
+    function updateProvisionInfo() {
+        if (!provisionSelect || !provisionInfo) return;
+        var val = provisionSelect.value;
+        if (provisionLabels[val] && provisionAmounts[val] !== undefined) {
+            var amount = parseFloat(provisionAmounts[val]) || 0;
+            provisionInfo.textContent = provisionLabels[val] + ' — ' + formatDisplayMoney(amount) + ' TL';
+        } else {
+            provisionInfo.textContent = '';
+        }
+    }
+
+    if (provisionSelect) {
+        provisionSelect.addEventListener('change', updateProvisionInfo);
+        updateProvisionInfo();
+    }
 });

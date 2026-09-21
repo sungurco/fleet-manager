@@ -9,25 +9,52 @@ class Vehicle(models.Model):
         HASARLI = "HASARLI", "Hasarlı"
         PASIF = "PASIF", "Pasif / Filodan Çıkarıldı"
 
+    class Color(models.TextChoices):
+        BEYAZ = "BEYAZ", "Beyaz"
+        SIYAH = "SIYAH", "Siyah"
+        GRI = "GRI", "Gri"
+        GUMUS = "GUMUS", "Gümüş"
+        KIRMIZI = "KIRMIZI", "Kırmızı"
+        MAVI = "MAVI", "Mavi"
+        LACIVERT = "LACIVERT", "Lacivert"
+        YESIL = "YESIL", "Yeşil"
+        SARI = "SARI", "Sarı"
+        TURUNCU = "TURUNCU", "Turuncu"
+        KAHVERENGI = "KAHVERENGI", "Kahverengi"
+        BORDO = "BORDO", "Bordo"
+        BEJ = "BEJ", "Bej"
+        TURKUAZ = "TURKUAZ", "Turkuaz"
+        MOR = "MOR", "Mor"
+        ALTIN = "ALTIN", "Altın"
+        DIGER = "DIGER", "Diğer"
+
     plate = models.CharField("Plaka", max_length=20, unique=True)
     brand = models.CharField("Marka", max_length=50)
     model_name = models.CharField("Model", max_length=50)
     year = models.PositiveIntegerField("Model Yılı")
-    color = models.CharField("Renk", max_length=30, blank=True)
+    color = models.CharField("Renk", max_length=30, choices=Color.choices, blank=True)
     chassis_no = models.CharField("Şasi No", max_length=50, blank=True)
     engine_no = models.CharField("Motor No", max_length=50, blank=True)
     fuel_type = models.CharField("Yakıt Tipi", max_length=30, blank=True)
     transmission = models.CharField("Vites Tipi", max_length=30, blank=True)
     km = models.PositiveIntegerField("Kilometre", default=0)
 
-    daily_price = models.DecimalField("Günlük Fiyat", max_digits=10, decimal_places=2)
+    daily_price = models.DecimalField(
+        "Günlük Fiyat", max_digits=10, decimal_places=2, null=True, blank=True,
+        help_text="DEPRECATED: artık her kiralamada elle girilir, araç kaydında kullanılmıyor.",
+    )
     monthly_price = models.DecimalField("Aylık Fiyat", max_digits=10, decimal_places=2, null=True, blank=True)
     yearly_price = models.DecimalField("Yıllık Fiyat", max_digits=10, decimal_places=2, null=True, blank=True)
 
     status = models.CharField("Durum", max_length=20, choices=Status.choices, default=Status.MUSAIT)
 
     purchase_date = models.DateField("Filoya Katılım Tarihi", null=True, blank=True)
-    next_maintenance_date = models.DateField("Sonraki Bakım Tarihi", null=True, blank=True)
+    acquisition_date = models.DateField("Satın Alma Tarihi", null=True, blank=True)
+    purchase_cost = models.DecimalField("Satın Alma Maliyeti", max_digits=12, decimal_places=2, null=True, blank=True)
+    next_maintenance_date = models.DateField(
+        "Sonraki Bakım Tarihi", null=True, blank=True,
+        help_text="DEPRECATED: bakım takibi ileride ayrı bir Bakım modülü altında ele alınacak, formdan kaldırıldı.",
+    )
     estimated_service_end_date = models.DateField(
         "Tahmini Servis Bitiş Tarihi", null=True, blank=True,
         help_text="Araç Serviste iken bu bakımın ne zaman biteceğini belirtir.",

@@ -41,6 +41,7 @@
                     {% sortable_th "Durum" "durum" %}
                     {% sortable_th "Ödeme" "odeme" %}
                     {% sortable_th "Tutar" "tutar" %}
+                    <th>Provizyon</th>
                     <th></th>
                 </tr>
             </thead>
@@ -55,10 +56,18 @@
                     <td><span class="status-badge status-{{ r.status }}">{{ r.get_status_display }}</span></td>
                     <td><span class="payment-badge payment-{{ r.payment_badge_status }}">{{ r.payment_badge_label }}</span></td>
                     <td>{{ r.total_price }} TL</td>
+                    <td>
+                        {% if r.provision_type != "YOK" %}
+                            <div>{{ r.get_provision_type_display }} — {{ r.provision_amount }} TL</div>
+                            <span class="text-secondary small">{{ r.get_provision_status_display }}</span>
+                        {% else %}
+                            <span class="text-secondary">-</span>
+                        {% endif %}
+                    </td>
                     <td><a href="{% url 'rentals:detail' r.pk %}" class="btn btn-sm btn-outline-secondary">Detay</a></td>
                 </tr>
             {% empty %}
-                <tr><td colspan="9" class="text-secondary">Kayıt bulunamadı.</td></tr>
+                <tr><td colspan="10" class="text-secondary">Kayıt bulunamadı.</td></tr>
             {% endfor %}
             </tbody>
         </table>

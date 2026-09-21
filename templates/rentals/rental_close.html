@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+<p>{{ rental.vehicle.plate }} — {{ rental.customer.full_name }} ({{ rental.start_date }} - {{ rental.end_date }})</p>
+
+<form method="post" novalidate id="rentalCloseForm" style="max-width: 560px;">
+    {% csrf_token %}
+    {% if form.non_field_errors %}
+        <div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>
+    {% endif %}
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.actual_end_date.id_for_label }}">{{ form.actual_end_date.label }}</label>
+        {{ form.actual_end_date }}
+        {% if form.actual_end_date.errors %}<div class="text-danger small">{{ form.actual_end_date.errors|striptags }}</div>{% endif %}
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.return_km.id_for_label }}">{{ form.return_km.label }}</label>
+        {{ form.return_km }}
+    </div>
+
+    <div class="rental-close-summary" id="closeSummary">-</div>
+
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.new_total_price.id_for_label }}">{{ form.new_total_price.label }}</label>
+        {{ form.new_total_price }}
+        {% if form.new_total_price.errors %}<div class="text-danger small">{{ form.new_total_price.errors|striptags }}</div>{% endif %}
+    </div>
+
+    {% if rental.provision_type != "YOK" %}
+    <div class="mb-3">
+        <label class="form-label" for="{{ form.deduction_amount.id_for_label }}">{{ form.deduction_amount.label }}</label>
+        {{ form.deduction_amount }}
+        <div class="form-text">
+            Provizyon Tutarı: {{ rental.provision_amount }} TL. Buraya girilen tutar provizyondan kesilir, kalan
+            "İade Edilecek Provizyon" olarak otomatik hesaplanır. Boş bırakılırsa provizyonun tamamı iade edilmiş sayılır.
+        </div>
+        {% if form.deduction_amount.errors %}<div class="text-danger small">{{ form.deduction_amount.errors|striptags }}</div>{% endif %}
+    </div>
+    {% endif %}
+
+    <button type="submit" class="btn btn-success">Kaydet / Kapat</button>
+    <a href="{% url 'rentals:detail' rental.pk %}" class="btn btn-secondary">Vazgeç</a>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    window.RENTAL_CLOSE_DATA = {
+        startDate: "{{ rental.start_date|date:'Y-m-d' }}",
+        dailyPrice: "{{ rental.daily_price_snapshot|stringformat:'s' }}",
+        plannedDays: {{ rental.rental_days }},
+        plannedTotal: "{{ rental.total_price|stringformat:'s' }}"
+    };
+</script>
+<script src="{% static 'js/rental_close.js' %}"></script>
+{% endblock %}

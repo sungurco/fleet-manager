@@ -1,5 +1,6 @@
 import json
 from datetime import date, timedelta
+from decimal import Decimal
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
@@ -11,10 +12,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.permissions import role_required
+from apps.common.models import SystemSettings
 from apps.common.sorting import apply_sort
 from apps.vehicles.models import Vehicle
 
-from .forms import AddressForm, CustomerForm, DriverForm, RentalForm
+from .forms import AddressForm, CustomerForm, DriverForm, RentalCloseForm, RentalForm
 from .models import Address, Customer, Driver, Rental
 
 MANAGE_ROLES = ["ADMIN", "OPERASYON"]
@@ -158,7 +160,6 @@ def _rental_picker_data():
             "plate": v.plate,
             "status": v.status,
             "status_label": v.get_status_display(),
-            "daily_price": str(v.daily_price),
             "estimated_service_end_date": v.estimated_service_end_date.isoformat() if v.estimated_service_end_date else None,
             "estimated_resolution_date": v.estimated_resolution_date.isoformat() if v.estimated_resolution_date else None,
         }
@@ -192,6 +193,16 @@ def _rental_picker_data():
     }
 
 
+def _provision_settings_context():
+    provision_settings = SystemSettings.load()
+    return {
+        "provision_amounts_json": json.dumps({
+            "EKONOMIK": str(provision_settings.economy_provision_amount),
+            "LUKS": str(provision_settings.luxury_provision_amount),
+        }),
+    }
+
+
 @role_required(MANAGE_ROLES)
 def rental_create(request):
     if request.method == "POST":
@@ -218,6 +229,7 @@ def rental_create(request):
         form = RentalForm(initial=initial)
     context = {"form": form, "title": "Yeni Kiralama"}
     context.update(_rental_picker_data())
+    context.update(_provision_settings_context())
     return render(request, "rentals/rental_form.html", context)
 
 
@@ -234,6 +246,7 @@ def rental_update(request, pk):
         form = RentalForm(instance=rental)
     context = {"form": form, "title": "Kiralamayı Düzenle"}
     context.update(_rental_picker_data())
+    context.update(_provision_settings_context())
     return render(request, "rentals/rental_form.html", context)
 
 
@@ -257,23 +270,52 @@ def rental_deliver(request, pk):
 
 
 @role_required(MANAGE_ROLES)
-def rental_return(request, pk):
+def rental_close(request, pk):
+    """Erken iade / kiralama kapatma: 'Aracı Teslim Al / Kiralamayı Kapat' aksiyonu."""
     rental = get_object_or_404(Rental, pk=pk)
+    today = date.today()
     if request.method == "POST":
-        rental.return_km = request.POST.get("km") or None
-        rental.status = Rental.Status.TAMAMLANDI
-        rental.save()
-        vehicle = rental.vehicle
-        if vehicle.status == Vehicle.Status.KIRADA:
-            vehicle.status = Vehicle.Status.MUSAIT
-            vehicle.save(update_fields=["status"])
-        messages.success(request, "Araç iade alındı, kiralama tamamlandı.")
-        return redirect("rentals:detail", pk=rental.pk)
-    return render(request, "rentals/rental_action_confirm.html", {
+        form = RentalCloseForm(request.POST)
+        if form.is_valid():
+            actual_end_date = form.cleaned_data["actual_end_date"]
+            rental.actual_end_date = actual_end_date
+            rental.return_km = form.cleaned_data.get("return_km") or rental.return_km
+            rental.total_price = form.cleaned_data["new_total_price"]
+            rental.status = Rental.Status.TAMAMLANDI
+
+            if rental.provision_type != Rental.ProvisionType.YOK:
+                deduction = form.cleaned_data.get("deduction_amount") or Decimal("0")
+                rental.provision_deduction_amount = deduction
+                rental.provision_refund_date = today
+                rental.provision_status = (
+                    Rental.ProvisionStatus.KISMEN_KESILDI if deduction > 0 else Rental.ProvisionStatus.IADE_EDILDI
+                )
+
+            rental.save()
+
+            vehicle = rental.vehicle
+            if vehicle.status == Vehicle.Status.KIRADA:
+                still_active = Rental.objects.filter(
+                    vehicle=vehicle, status__in=[Rental.Status.REZERVE, Rental.Status.DEVAM_EDIYOR]
+                ).exclude(pk=rental.pk).exists()
+                if not still_active:
+                    vehicle.status = Vehicle.Status.MUSAIT
+                    vehicle.save(update_fields=["status"])
+
+            messages.success(request, "Araç iade alındı, kiralama tamamlandı.")
+            return redirect("rentals:detail", pk=rental.pk)
+    else:
+        actual_days = max((today - rental.start_date).days, 1)
+        suggested_total = (rental.daily_price_snapshot * actual_days).quantize(Decimal("0.01"))
+        form = RentalCloseForm(initial={
+            "actual_end_date": today,
+            "return_km": rental.return_km,
+            "new_total_price": suggested_total,
+        })
+    return render(request, "rentals/rental_close.html", {
         "rental": rental,
-        "title": "Araç İade Al",
-        "field_label": "İade Km",
-        "current_km": rental.return_km,
+        "form": form,
+        "title": "Aracı Teslim Al / Kiralamayı Kapat",
     })
 
 

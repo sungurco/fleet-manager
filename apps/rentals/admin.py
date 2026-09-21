@@ -24,8 +24,8 @@ class AddressAdmin(admin.ModelAdmin):
 
 @admin.register(Rental)
 class RentalAdmin(admin.ModelAdmin):
-    list_display = ("rental_no", "vehicle", "customer", "start_date", "end_date", "status", "payment_status", "total_price")
-    list_filter = ("status", "payment_status", "pricing_type")
+    list_display = ("rental_no", "vehicle", "customer", "start_date", "end_date", "status", "payment_status", "total_price", "provision_type", "provision_status")
+    list_filter = ("status", "payment_status", "pricing_type", "provision_type", "provision_status")
     search_fields = ("rental_no", "vehicle__plate", "customer__full_name")
     date_hierarchy = "start_date"
 

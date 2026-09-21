@@ -25,9 +25,13 @@
                     <span class="text-secondary">Belirtilmemiş</span>
                 {% endif %}
             </dd>
-            <dt class="col-sm-3">Tarih Aralığı</dt><dd class="col-sm-9">{{ rental.start_date }} - {{ rental.end_date }} ({{ rental.rental_days }} gün)</dd>
+            <dt class="col-sm-3">Başlangıç Tarihi</dt><dd class="col-sm-9">{{ rental.start_date }}</dd>
+            <dt class="col-sm-3">Planlanan Bitiş Tarihi</dt><dd class="col-sm-9">{{ rental.end_date }} ({{ rental.rental_days }} gün)</dd>
+            <dt class="col-sm-3">Gerçek Teslim Tarihi</dt><dd class="col-sm-9">
+                {% if rental.actual_end_date %}{{ rental.actual_end_date }} ({{ rental.actual_rental_days }} gün){% else %}<span class="text-secondary">Devam ediyor</span>{% endif %}
+            </dd>
             <dt class="col-sm-3">Fiyatlandırma</dt><dd class="col-sm-9">{{ rental.get_pricing_type_display }} — Günlük {{ rental.daily_price_snapshot }} TL</dd>
-            <dt class="col-sm-3">Toplam Tutar</dt><dd class="col-sm-9">{{ rental.total_price }} TL</dd>
+            <dt class="col-sm-3">Kiralama Tutarı</dt><dd class="col-sm-9">{{ rental.total_price }} TL</dd>
             <dt class="col-sm-3">Ödeme Durumu</dt><dd class="col-sm-9"><span class="payment-badge payment-{{ rental.payment_badge_status }}">{{ rental.payment_badge_label }}</span> ({{ rental.paid_amount }} TL ödendi)</dd>
             <dt class="col-sm-3">Durum</dt><dd class="col-sm-9"><span class="status-badge status-{{ rental.status }}">{{ rental.get_status_display }}</span></dd>
             <dt class="col-sm-3">Teslim Km</dt><dd class="col-sm-9">{{ rental.delivery_km|default:"-" }}</dd>
@@ -39,13 +43,33 @@
     </div>
 </div>
 
+<div class="provision-card mb-3">
+    <h6 class="mb-3">Provizyon</h6>
+    {% if rental.provision_type == "YOK" %}
+        <span class="text-secondary">Bu kiralama için provizyon alınmadı.</span>
+    {% else %}
+        <dl class="row mb-0">
+            <dt class="col-sm-3">Tip</dt><dd class="col-sm-9">{{ rental.get_provision_type_display }}</dd>
+            <dt class="col-sm-3">Tutar</dt><dd class="col-sm-9">{{ rental.provision_amount }} TL</dd>
+            <dt class="col-sm-3">Durum</dt><dd class="col-sm-9">{{ rental.get_provision_status_display }}</dd>
+            {% if rental.provision_deduction_amount %}
+            <dt class="col-sm-3">Kesinti Tutarı</dt><dd class="col-sm-9">{{ rental.provision_deduction_amount }} TL</dd>
+            <dt class="col-sm-3">İade Edilecek Provizyon</dt><dd class="col-sm-9">{{ rental.provision_refund_amount }} TL</dd>
+            {% endif %}
+            {% if rental.provision_refund_date %}
+            <dt class="col-sm-3">İade Tarihi</dt><dd class="col-sm-9">{{ rental.provision_refund_date }}</dd>
+            {% endif %}
+        </dl>
+    {% endif %}
+</div>
+
 {% if user.is_admin_role or user.is_operasyon_role %}
 <div class="d-flex gap-2">
     {% if rental.status == "REZERVE" %}
         <a href="{% url 'rentals:deliver' rental.pk %}" class="btn btn-success">Araç Teslim Et</a>
     {% endif %}
     {% if rental.status == "DEVAM_EDIYOR" %}
-        <a href="{% url 'rentals:return' rental.pk %}" class="btn btn-success">Araç İade Al</a>
+        <a href="{% url 'rentals:close' rental.pk %}" class="btn btn-success">Aracı Teslim Al / Kiralamayı Kapat</a>
     {% endif %}
     {% if rental.status == "REZERVE" or rental.status == "DEVAM_EDIYOR" %}
         <form method="post" action="{% url 'rentals:cancel' rental.pk %}" onsubmit="return confirm('Kiralamayı iptal etmek istediğinize emin misiniz?');">
