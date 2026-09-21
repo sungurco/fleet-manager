@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% load static %}
+{% block content %}
+<h2 class="mb-4">{{ title }}</h2>
+<div class="panel-card p-4" style="max-width: 520px;">
+    <form method="post" novalidate>
+        {% csrf_token %}
+        {% if form.non_field_errors %}
+            <div class="alert alert-danger">{% for e in form.non_field_errors %}<div>{{ e }}</div>{% endfor %}</div>
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.economy_provision_amount.id_for_label }}">{{ form.economy_provision_amount.label }}</label>
+            {{ form.economy_provision_amount }}
+            {% if form.economy_provision_amount.errors %}<div class="text-danger small">{{ form.economy_provision_amount.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.luxury_provision_amount.id_for_label }}">{{ form.luxury_provision_amount.label }}</label>
+            {{ form.luxury_provision_amount }}
+            {% if form.luxury_provision_amount.errors %}<div class="text-danger small">{{ form.luxury_provision_amount.errors|striptags }}</div>{% endif %}
+        </div>
+
+        <button type="submit" class="btn btn-primary">Kaydet</button>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/settings_form.js' %}"></script>
+{% endblock %}

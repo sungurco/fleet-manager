@@ -12,7 +12,7 @@ class RentalForm(forms.ModelForm):
             "vehicle", "customer", "driver", "start_date", "end_date",
             "pricing_type", "daily_price_snapshot", "total_price",
             "status", "payment_status", "paid_amount",
-            "delivery_km", "return_km",
+            "delivery_km", "return_km", "provision_type",
         ]
         widgets = {
             "vehicle": forms.Select(attrs={"class": "form-select"}),
@@ -28,6 +28,7 @@ class RentalForm(forms.ModelForm):
             "paid_amount": forms.TextInput(attrs={"class": "form-control money-input", "inputmode": "decimal", "autocomplete": "off"}),
             "delivery_km": forms.NumberInput(attrs={"class": "form-control"}),
             "return_km": forms.NumberInput(attrs={"class": "form-control"}),
+            "provision_type": forms.Select(attrs={"class": "form-select", "id": "id_provision_type"}),
         }
 
     def __init__(self, *args, **kwargs):
@@ -38,6 +39,30 @@ class RentalForm(forms.ModelForm):
         self.fields["driver"].required = False
         self.fields["driver"].label_from_instance = lambda d: f"{d.full_name} ({d.customer.full_name})"
         self.fields["total_price"].required = False
+
+
+class RentalCloseForm(forms.Form):
+    """Erken iade / kiralama kapatma formu - 'Aracı Teslim Al / Kiralamayı Kapat' aksiyonu için."""
+
+    actual_end_date = forms.DateField(
+        label="Fiili Bitiş Tarihi",
+        widget=forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+    )
+    return_km = forms.IntegerField(
+        label="İade Km", required=False, min_value=0,
+        widget=forms.NumberInput(attrs={"class": "form-control"}),
+    )
+    new_total_price = forms.DecimalField(
+        label="Yeni (Gerçek) Kiralama Tutarı", max_digits=10, decimal_places=2,
+        widget=forms.TextInput(attrs={
+            "class": "form-control money-input", "inputmode": "decimal", "autocomplete": "off", "id": "id_new_total_price",
+        }),
+    )
+    deduction_amount = forms.DecimalField(
+        label="Ek Ücret / Kesinti", required=False, max_digits=10, decimal_places=2, min_value=0,
+        widget=forms.TextInput(attrs={"class": "form-control money-input", "inputmode": "decimal", "autocomplete": "off"}),
+        help_text="Hasar, gecikme cezası, temizlik ücreti gibi durumlar için - girilirse provizyon tutarından düşülür.",
+    )
 
 
 class CustomerForm(forms.ModelForm):

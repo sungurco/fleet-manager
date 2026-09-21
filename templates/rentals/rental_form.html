@@ -101,6 +101,13 @@
             </div>
         </div>
 
+        <h6 class="mt-4 mb-2">Provizyon</h6>
+        <div class="mb-4">
+            <label class="form-label" for="{{ form.provision_type.id_for_label }}">{{ form.provision_type.label }}</label>
+            {{ form.provision_type }}
+            <div class="provision-info" id="provisionInfo"></div>
+        </div>
+
         <button type="submit" class="btn btn-primary">Kaydet</button>
         <a href="{% url 'rentals:list' %}" class="btn btn-secondary">Vazgeç</a>
     </form>
@@ -129,7 +136,8 @@
     window.RENTAL_FORM_DATA = {
         vehicles: {{ vehicles_json|safe }},
         customers: {{ customers_json|safe }},
-        drivers: {{ drivers_json|safe }}
+        drivers: {{ drivers_json|safe }},
+        provisionAmounts: {{ provision_amounts_json|safe }}
     };
 </script>
 <script src="{% static 'js/rental_form.js' %}"></script>

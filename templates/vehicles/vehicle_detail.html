@@ -15,10 +15,12 @@
         <dl class="row mb-0">
             <dt class="col-sm-3">Durum</dt><dd class="col-sm-9"><span class="status-badge status-{{ vehicle.status }}">{{ vehicle.get_status_display }}</span></dd>
             <dt class="col-sm-3">Model Yılı</dt><dd class="col-sm-9">{{ vehicle.year }}</dd>
+            <dt class="col-sm-3">Renk</dt><dd class="col-sm-9">{{ vehicle.get_color_display|default:"-" }}</dd>
             <dt class="col-sm-3">Şase No</dt><dd class="col-sm-9">{{ vehicle.chassis_no|default:"-" }}</dd>
+            {% if vehicle.daily_price %}
             <dt class="col-sm-3">Günlük Fiyat</dt><dd class="col-sm-9">{{ vehicle.daily_price }} TL</dd>
+            {% endif %}
             <dt class="col-sm-3">Sonraki Muayene</dt><dd class="col-sm-9">{{ vehicle.inspection.next_inspection_date|default:"-" }}</dd>
-            <dt class="col-sm-3">Sonraki Bakım</dt><dd class="col-sm-9">{{ vehicle.next_maintenance_date|default:"-" }}</dd>
             {% if vehicle.status == "SERVISTE" %}
             <dt class="col-sm-3">Tahmini Servis Bitişi</dt><dd class="col-sm-9">{{ vehicle.estimated_service_end_date|default:"Girilmemiş" }}</dd>
             {% endif %}
@@ -26,6 +28,8 @@
             <dt class="col-sm-3">Tahmini Çözüm Tarihi</dt><dd class="col-sm-9">{{ vehicle.estimated_resolution_date|default:"Belirsiz" }}</dd>
             {% endif %}
             <dt class="col-sm-3">Filo Sözleşme Bitişi</dt><dd class="col-sm-9">{{ vehicle.fleet_contract_end_date|default:"-" }}</dd>
+            <dt class="col-sm-3">Satın Alma Tarihi</dt><dd class="col-sm-9">{{ vehicle.acquisition_date|default:"-" }}</dd>
+            <dt class="col-sm-3">Satın Alma Maliyeti</dt><dd class="col-sm-9">{{ vehicle.purchase_cost|default:"-" }}{% if vehicle.purchase_cost %} TL{% endif %}</dd>
         </dl>
     </div>
 </div>

@@ -11,6 +11,7 @@ urlpatterns = [
     path("araclar/", include("apps.vehicles.urls")),
     path("kiralama/", include("apps.rentals.urls")),
     path("raporlar/", include("apps.reports.urls")),
+    path("ayarlar/", include("apps.common.urls")),
     path("", dashboard, name="dashboard"),
 ]
 

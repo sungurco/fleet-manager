@@ -5,6 +5,8 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from apps.common.models import SystemSettings
+
 from .utils import turkish_upper
 from .validators import validate_tax_no, validate_tc_no
 
@@ -151,6 +153,16 @@ class Rental(models.Model):
         KISMI = "KISMI", "Kısmi Ödendi"
         ODENDI = "ODENDI", "Ödendi"
 
+    class ProvisionType(models.TextChoices):
+        YOK = "YOK", "Yok"
+        EKONOMIK = "EKONOMIK", "Ekonomik"
+        LUKS = "LUKS", "Lüks"
+
+    class ProvisionStatus(models.TextChoices):
+        ALINDI = "ALINDI", "Alındı"
+        IADE_EDILDI = "IADE_EDILDI", "İade Edildi"
+        KISMEN_KESILDI = "KISMEN_KESILDI", "Kısmen Kesildi"
+
     rental_no = models.CharField("Kiralama No", max_length=20, unique=True, editable=False, default="")
 
     vehicle = models.ForeignKey("vehicles.Vehicle", on_delete=models.PROTECT, related_name="rentals", verbose_name="Araç")
@@ -158,7 +170,8 @@ class Rental(models.Model):
     driver = models.ForeignKey(Driver, on_delete=models.SET_NULL, null=True, blank=True, related_name="rentals", verbose_name="Aracı Kullanacak Kişi")
 
     start_date = models.DateField("Başlangıç Tarihi")
-    end_date = models.DateField("Bitiş Tarihi")
+    end_date = models.DateField("Planlanan Bitiş Tarihi")
+    actual_end_date = models.DateField("Gerçek Teslim Tarihi", null=True, blank=True)
 
     pricing_type = models.CharField("Fiyatlandırma Tipi", max_length=10, choices=PricingType.choices, default=PricingType.GUNLUK)
     daily_price_snapshot = models.DecimalField("Kiralama Anındaki Günlük Fiyat", max_digits=10, decimal_places=2)
@@ -170,6 +183,15 @@ class Rental(models.Model):
 
     delivery_km = models.PositiveIntegerField("Teslim Km", null=True, blank=True)
     return_km = models.PositiveIntegerField("İade Km", null=True, blank=True)
+
+    provision_type = models.CharField("Provizyon Tipi", max_length=10, choices=ProvisionType.choices, default=ProvisionType.YOK)
+    provision_amount = models.DecimalField(
+        "Provizyon Tutarı", max_digits=10, decimal_places=2, default=0, editable=False,
+        help_text="Kiralama oluşturulurken/tipi değiştiğinde ayarlardaki güncel değerden otomatik kopyalanır, sonradan ayar değişse bile sabit kalır.",
+    )
+    provision_status = models.CharField("Provizyon Durumu", max_length=20, choices=ProvisionStatus.choices, default=ProvisionStatus.ALINDI)
+    provision_deduction_amount = models.DecimalField("Provizyon Kesinti Tutarı", max_digits=10, decimal_places=2, null=True, blank=True)
+    provision_refund_date = models.DateField("Provizyon İade Tarihi", null=True, blank=True)
 
     notification_sent = models.BooleanField("Onay Bildirimi Gönderildi", default=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, related_name="created_rentals")
@@ -187,6 +209,18 @@ class Rental(models.Model):
     @property
     def rental_days(self):
         return max((self.end_date - self.start_date).days, 1)
+
+    @property
+    def actual_rental_days(self):
+        if not self.actual_end_date:
+            return None
+        return max((self.actual_end_date - self.start_date).days, 1)
+
+    @property
+    def provision_refund_amount(self):
+        if self.provision_type == self.ProvisionType.YOK:
+            return None
+        return self.provision_amount - (self.provision_deduction_amount or Decimal("0"))
 
     @property
     def is_below_minimum_days(self):
@@ -233,11 +267,28 @@ class Rental(models.Model):
         sequence = int(last_no[4:]) + 1 if last_no else 0
         return f"{year_str}{sequence:06d}"
 
+    def _refresh_provision_amount(self):
+        if self.provision_type == self.ProvisionType.YOK:
+            self.provision_amount = Decimal("0.00")
+            return
+        needs_refresh = self._state.adding
+        if not needs_refresh and self.pk:
+            previous_type = Rental.objects.filter(pk=self.pk).values_list("provision_type", flat=True).first()
+            needs_refresh = previous_type != self.provision_type
+        if needs_refresh:
+            provision_settings = SystemSettings.load()
+            self.provision_amount = (
+                provision_settings.economy_provision_amount
+                if self.provision_type == self.ProvisionType.EKONOMIK
+                else provision_settings.luxury_provision_amount
+            )
+
     def save(self, *args, **kwargs):
         if not self.total_price:
             # Kullanıcı Toplam Tutar'ı formda elle girmediyse (veya sıfır bıraktıysa) otomatik hesapla.
             # Elle girilmiş/override edilmiş bir değer varsa olduğu gibi korunur.
             self.total_price = self.calculate_total_price()
+        self._refresh_provision_amount()
         is_new = self._state.adding
         if not self.rental_no:
             self.rental_no = self._generate_rental_no()

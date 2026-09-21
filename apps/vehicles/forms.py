@@ -13,30 +13,32 @@ class VehicleForm(forms.ModelForm):
     )
 
     field_order = [
-        "plate", "brand", "model_name", "year", "chassis_no", "status",
+        "plate", "brand", "model_name", "year", "color", "chassis_no", "status",
         "estimated_service_end_date", "estimated_resolution_date",
-        "inspection_date", "next_maintenance_date", "fleet_contract_end_date", "daily_price",
+        "inspection_date", "fleet_contract_end_date",
+        "acquisition_date", "purchase_cost",
     ]
 
     class Meta:
         model = Vehicle
         fields = [
-            "plate", "brand", "model_name", "year", "chassis_no", "status",
+            "plate", "brand", "model_name", "year", "color", "chassis_no", "status",
             "estimated_service_end_date", "estimated_resolution_date",
-            "next_maintenance_date", "fleet_contract_end_date", "daily_price",
+            "fleet_contract_end_date", "acquisition_date", "purchase_cost",
         ]
         widgets = {
             "plate": forms.TextInput(attrs={"class": "form-control"}),
             "brand": forms.TextInput(attrs={"class": "form-control"}),
             "model_name": forms.TextInput(attrs={"class": "form-control"}),
             "year": forms.NumberInput(attrs={"class": "form-control"}),
+            "color": forms.Select(attrs={"class": "form-select"}),
             "chassis_no": forms.TextInput(attrs={"class": "form-control"}),
             "status": forms.Select(attrs={"class": "form-select", "id": "id_status"}),
             "estimated_service_end_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
             "estimated_resolution_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
-            "next_maintenance_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
             "fleet_contract_end_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
-            "daily_price": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
+            "acquisition_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+            "purchase_cost": forms.NumberInput(attrs={"class": "form-control", "step": "0.01"}),
         }
 
     def __init__(self, *args, **kwargs):

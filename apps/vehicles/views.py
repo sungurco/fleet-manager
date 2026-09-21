@@ -34,7 +34,6 @@ def vehicle_list(request):
         "model": "model_name",
         "durum": "status",
         "muayene": "inspection__next_inspection_date",
-        "bakim": "next_maintenance_date",
     }
     vehicles, sort_context = apply_sort(request, vehicles, sort_map)
 

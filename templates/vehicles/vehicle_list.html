@@ -32,7 +32,6 @@
                 {% sortable_th "Model" "model" %}
                 {% sortable_th "Durum" "durum" %}
                 {% sortable_th "Sonraki Muayene" "muayene" %}
-                {% sortable_th "Sonraki Bakım" "bakim" %}
                 <th></th>
             </tr>
         </thead>
@@ -44,7 +43,6 @@
                 <td>{{ v.model_name }}</td>
                 <td><span class="status-badge status-{{ v.status }}">{{ v.get_status_display }}</span></td>
                 <td>{{ v.inspection.next_inspection_date|default:"-" }}</td>
-                <td>{{ v.next_maintenance_date|default:"-" }}</td>
                 <td class="text-end">
                     {% if user.is_admin_role or user.is_operasyon_role %}
                     <a href="{% url 'vehicles:update' v.pk %}" class="btn btn-sm btn-outline-secondary">Düzenle</a>
@@ -53,7 +51,7 @@
                 </td>
             </tr>
         {% empty %}
-            <tr><td colspan="7" class="text-secondary">Kayıt bulunamadı.</td></tr>
+            <tr><td colspan="6" class="text-secondary">Kayıt bulunamadı.</td></tr>
         {% endfor %}
         </tbody>
     </table>
