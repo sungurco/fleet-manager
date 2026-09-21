@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
+from .utils import turkish_upper
 from .validators import validate_tax_no, validate_tc_no
 
 
@@ -13,13 +14,13 @@ class Customer(models.Model):
         SAHIS = "SAHIS", "Şahıs"
         TUZEL = "TUZEL", "Tüzel"
 
+    customer_number = models.CharField("Müşteri No", max_length=7, unique=True, editable=False, default="")
     customer_type = models.CharField("Müşteri Tipi", max_length=10, choices=CustomerType.choices, default=CustomerType.SAHIS)
 
     full_name = models.CharField("Ad Soyad / Firma Adı", max_length=150)
     tc_no = models.CharField("T.C. Kimlik No", max_length=11, blank=True, validators=[validate_tc_no])
     phone = models.CharField("Telefon", max_length=20)
     email = models.EmailField("E-posta", blank=True)
-    address = models.TextField("Adres", blank=True)
     notes = models.TextField("Notlar", blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -27,7 +28,6 @@ class Customer(models.Model):
     company_title = models.CharField("Firma Unvanı", max_length=200, blank=True)
     tax_office = models.CharField("Vergi Dairesi", max_length=100, blank=True)
     tax_no = models.CharField("Vergi No", max_length=10, blank=True, validators=[validate_tax_no])
-    billing_address = models.TextField("Fatura Adresi", blank=True)
     contact_person_name = models.CharField("Yetkili Kişi Ad Soyad", max_length=150, blank=True)
     contact_person_phone = models.CharField("Yetkili Kişi Telefon", max_length=20, blank=True)
     contact_person_email = models.EmailField("Yetkili Kişi E-posta", blank=True)
@@ -43,6 +43,63 @@ class Customer(models.Model):
     def clean(self):
         if self.customer_type == self.CustomerType.TUZEL and not self.company_title:
             raise ValidationError({"company_title": "Tüzel müşteriler için firma unvanı zorunludur."})
+
+    @staticmethod
+    def _generate_customer_number():
+        last = (
+            Customer.objects.exclude(customer_number="")
+            .order_by("-customer_number")
+            .values_list("customer_number", flat=True)
+            .first()
+        )
+        sequence = int(last) + 1 if last else 1
+        return f"{sequence:07d}"
+
+    def save(self, *args, **kwargs):
+        # Frontend'de zaten büyük harfe çevriliyor, backend'de de güvenlik katmanı olarak uygulanır.
+        self.full_name = turkish_upper(self.full_name)
+        if self.company_title:
+            self.company_title = turkish_upper(self.company_title)
+        if not self.customer_number:
+            self.customer_number = self._generate_customer_number()
+        super().save(*args, **kwargs)
+
+
+class Address(models.Model):
+    """Müşteriye ait fatura/teslimat adresi. Bir müşterinin birden fazla adresi olabilir."""
+
+    class AddressType(models.TextChoices):
+        FATURA = "FATURA", "Fatura"
+        TESLIMAT = "TESLIMAT", "Teslimat"
+        HER_IKISI = "HER_IKISI", "Her İkisi de"
+
+    customer = models.ForeignKey(Customer, on_delete=models.CASCADE, related_name="addresses", verbose_name="Müşteri")
+    label = models.CharField("Adres Etiketi", max_length=100, help_text="Örn. Merkez, Şube - Kadıköy")
+    address_type = models.CharField("Adres Tipi", max_length=10, choices=AddressType.choices, default=AddressType.FATURA)
+    address = models.TextField("Adres")
+    is_default = models.BooleanField("Varsayılan", default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Adres"
+        verbose_name_plural = "Adresler"
+        ordering = ["-is_default", "label"]
+
+    def __str__(self):
+        return f"{self.label} ({self.get_address_type_display()})"
+
+    def _conflicting_types(self):
+        """Aynı müşteride bu adresle aynı anda varsayılan kalamayacak tipler."""
+        if self.address_type == self.AddressType.HER_IKISI:
+            return [self.AddressType.FATURA, self.AddressType.TESLIMAT, self.AddressType.HER_IKISI]
+        return [self.address_type, self.AddressType.HER_IKISI]
+
+    def save(self, *args, **kwargs):
+        super().save(*args, **kwargs)
+        if self.is_default:
+            Address.objects.filter(
+                customer_id=self.customer_id, is_default=True, address_type__in=self._conflicting_types()
+            ).exclude(pk=self.pk).update(is_default=False)
 
 
 class Driver(models.Model):

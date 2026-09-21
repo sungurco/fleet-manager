@@ -5,8 +5,8 @@ class Vehicle(models.Model):
     class Status(models.TextChoices):
         MUSAIT = "MUSAIT", "Müsait"
         KIRADA = "KIRADA", "Kirada"
-        BAKIMDA = "BAKIMDA", "Bakımda"
-        HASARLI = "HASARLI", "Hasarlı - Serviste"
+        SERVISTE = "SERVISTE", "Serviste"
+        HASARLI = "HASARLI", "Hasarlı"
         PASIF = "PASIF", "Pasif / Filodan Çıkarıldı"
 
     plate = models.CharField("Plaka", max_length=20, unique=True)
@@ -28,6 +28,14 @@ class Vehicle(models.Model):
 
     purchase_date = models.DateField("Filoya Katılım Tarihi", null=True, blank=True)
     next_maintenance_date = models.DateField("Sonraki Bakım Tarihi", null=True, blank=True)
+    estimated_service_end_date = models.DateField(
+        "Tahmini Servis Bitiş Tarihi", null=True, blank=True,
+        help_text="Araç Serviste iken bu bakımın ne zaman biteceğini belirtir.",
+    )
+    estimated_resolution_date = models.DateField(
+        "Tahmini Çözüm Tarihi", null=True, blank=True,
+        help_text="Hasarlı araçlar için opsiyonel — süreç genelde belirsizdir.",
+    )
     fleet_contract_end_date = models.DateField("Filo Sözleşme Bitiş Tarihi", null=True, blank=True)
     notes = models.TextField("Notlar", blank=True)
 

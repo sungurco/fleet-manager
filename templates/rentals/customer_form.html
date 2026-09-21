@@ -41,11 +41,6 @@
         </div>
     </div>
 
-    <div class="mb-3">
-        <label class="form-label" for="{{ form.address.id_for_label }}">{{ form.address.label }}</label>
-        {{ form.address }}
-    </div>
-
     <div id="tuzelFields" class="panel-card p-3 mb-3">
         <h5 class="mb-3">Kurumsal Bilgiler</h5>
         <div class="mb-3">
@@ -64,10 +59,6 @@
                 <div class="field-warning" id="taxNoWarning"></div>
                 {% if form.tax_no.errors %}<div class="text-danger small">{{ form.tax_no.errors|striptags }}</div>{% endif %}
             </div>
-        </div>
-        <div class="mb-3">
-            <label class="form-label" for="{{ form.billing_address.id_for_label }}">{{ form.billing_address.label }}</label>
-            {{ form.billing_address }}
         </div>
         <div class="row">
             <div class="col-md-4 mb-3">
@@ -88,6 +79,31 @@
     <div class="mb-3">
         <label class="form-label" for="{{ form.notes.id_for_label }}">{{ form.notes.label }}</label>
         {{ form.notes }}
+    </div>
+
+    <div class="panel-card p-3 mb-3">
+        <h5 class="mb-1">Yeni Adres Ekle</h5>
+        <div class="section-sub mb-3">Opsiyonel — boş bırakırsanız müşteri adressiz oluşturulur, adresi sonradan "Adresler" bölümünden ekleyebilirsiniz.</div>
+        <div class="mb-3">
+            <label class="form-label" for="{{ form.initial_address_label.id_for_label }}">{{ form.initial_address_label.label }}</label>
+            {{ form.initial_address_label }}
+        </div>
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label" for="{{ form.initial_address_type.id_for_label }}">{{ form.initial_address_type.label }}</label>
+                {{ form.initial_address_type }}
+            </div>
+            <div class="col-md-6 mb-3 d-flex align-items-end">
+                <div class="form-check">
+                    {{ form.initial_address_is_default }}
+                    <label class="form-check-label" for="{{ form.initial_address_is_default.id_for_label }}">{{ form.initial_address_is_default.label }}</label>
+                </div>
+            </div>
+        </div>
+        <div class="mb-0">
+            <label class="form-label" for="{{ form.initial_address_text.id_for_label }}">{{ form.initial_address_text.label }}</label>
+            {{ form.initial_address_text }}
+        </div>
     </div>
 
     <button type="submit" class="btn btn-primary">Kaydet</button>

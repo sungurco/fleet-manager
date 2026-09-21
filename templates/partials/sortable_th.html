@@ -1,0 +1,4 @@
+<th class="sortable-th-cell"><a href="{{ url }}" class="sortable-th{% if is_active %} sortable-th-active{% endif %}">
+    <span>{{ label }}</span>
+    <span class="sort-arrow{% if not is_active %} sort-arrow-inactive{% endif %}">{% if direction == "desc" %}&#9660;{% else %}&#9650;{% endif %}</span>
+</a></th>

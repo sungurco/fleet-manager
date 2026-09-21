@@ -20,4 +20,7 @@ urlpatterns = [
     path("musteriler/<int:customer_pk>/surucu-ekle/", views.driver_create, name="driver_create"),
     path("musteriler/<int:customer_pk>/surucu-ekle-ajax/", views.driver_quick_create, name="driver_quick_create"),
     path("surucu/<int:pk>/duzenle/", views.driver_update, name="driver_update"),
+    path("musteriler/<int:customer_pk>/adres-ekle/", views.address_create, name="address_create"),
+    path("adres/<int:pk>/duzenle/", views.address_update, name="address_update"),
+    path("adres/<int:pk>/sil/", views.address_delete, name="address_delete"),
 ]

@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sortable %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3">
     <h2 class="mb-0">Filo Doluluk Raporu</h2>
@@ -6,7 +7,13 @@
 </div>
 <div class="panel-card p-3">
     <table class="table app-table mb-0">
-        <thead><tr><th>Plaka</th><th>Marka</th><th>Model</th><th>Durum</th><th>Kiralanan Gün</th></tr></thead>
+        <thead><tr>
+            {% sortable_th "Plaka" "plaka" %}
+            {% sortable_th "Marka" "marka" %}
+            {% sortable_th "Model" "model" %}
+            {% sortable_th "Durum" "durum" %}
+            {% sortable_th "Kiralanan Gün" "gun" %}
+        </tr></thead>
         <tbody>
         {% for row in table_rows %}
             <tr>

@@ -2,7 +2,7 @@ from django import forms
 
 from apps.vehicles.models import Vehicle
 
-from .models import Customer, Driver, Rental
+from .models import Address, Customer, Driver, Rental
 
 
 class RentalForm(forms.ModelForm):
@@ -41,29 +41,59 @@ class RentalForm(forms.ModelForm):
 
 
 class CustomerForm(forms.ModelForm):
+    # Adres artık ayrı bir Address modeliyle yönetiliyor (bkz. Adresler bölümü / "Yeni Adres").
+    # Bu alanlar isteğe bağlı — doldurulursa müşteriyle birlikte ilk adres de oluşturulur.
+    initial_address_label = forms.CharField(
+        label="Adres Etiketi", max_length=100, required=False,
+        widget=forms.TextInput(attrs={"class": "form-control", "placeholder": "Örn. Merkez, Ev, Şube - Kadıköy"}),
+    )
+    initial_address_type = forms.ChoiceField(
+        label="Adres Tipi", choices=Address.AddressType.choices, required=False,
+        initial=Address.AddressType.FATURA, widget=forms.Select(attrs={"class": "form-select"}),
+    )
+    initial_address_text = forms.CharField(
+        label="Adres", required=False,
+        widget=forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+    )
+    initial_address_is_default = forms.BooleanField(
+        label="Varsayılan", required=False, initial=True,
+        widget=forms.CheckboxInput(attrs={"class": "form-check-input"}),
+    )
+
     class Meta:
         model = Customer
         fields = [
-            "customer_type", "full_name", "tc_no", "phone", "email", "address", "notes",
-            "company_title", "tax_office", "tax_no", "billing_address",
+            "customer_type", "full_name", "tc_no", "phone", "email", "notes",
+            "company_title", "tax_office", "tax_no",
             "contact_person_name", "contact_person_phone", "contact_person_email",
         ]
         widgets = {
             "customer_type": forms.Select(attrs={"class": "form-select", "id": "id_customer_type"}),
-            "full_name": forms.TextInput(attrs={"class": "form-control"}),
+            "full_name": forms.TextInput(attrs={"class": "form-control", "id": "id_full_name"}),
             "tc_no": forms.TextInput(attrs={"class": "form-control", "maxlength": "11"}),
             "phone": forms.TextInput(attrs={"class": "form-control"}),
             "email": forms.EmailInput(attrs={"class": "form-control"}),
-            "address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "notes": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
-            "company_title": forms.TextInput(attrs={"class": "form-control"}),
+            "company_title": forms.TextInput(attrs={"class": "form-control", "id": "id_company_title"}),
             "tax_office": forms.TextInput(attrs={"class": "form-control"}),
             "tax_no": forms.TextInput(attrs={"class": "form-control", "maxlength": "10"}),
-            "billing_address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
             "contact_person_name": forms.TextInput(attrs={"class": "form-control"}),
             "contact_person_phone": forms.TextInput(attrs={"class": "form-control"}),
             "contact_person_email": forms.EmailInput(attrs={"class": "form-control"}),
         }
+
+    def save(self, commit=True):
+        customer = super().save(commit=commit)
+        address_text = (self.cleaned_data.get("initial_address_text") or "").strip()
+        if commit and address_text:
+            Address.objects.create(
+                customer=customer,
+                label=self.cleaned_data.get("initial_address_label") or "Adres",
+                address_type=self.cleaned_data.get("initial_address_type") or Address.AddressType.FATURA,
+                address=address_text,
+                is_default=self.cleaned_data.get("initial_address_is_default", True),
+            )
+        return customer
 
 
 class DriverForm(forms.ModelForm):
@@ -84,4 +114,16 @@ class DriverForm(forms.ModelForm):
             "license_class": forms.TextInput(attrs={"class": "form-control"}),
             "license_issue_place": forms.TextInput(attrs={"class": "form-control"}),
             "license_issue_date": forms.DateInput(attrs={"class": "form-control", "type": "date"}, format="%Y-%m-%d"),
+        }
+
+
+class AddressForm(forms.ModelForm):
+    class Meta:
+        model = Address
+        fields = ["label", "address_type", "address", "is_default"]
+        widgets = {
+            "label": forms.TextInput(attrs={"class": "form-control", "placeholder": "Örn. Merkez, Şube - Kadıköy"}),
+            "address_type": forms.Select(attrs={"class": "form-select"}),
+            "address": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "is_default": forms.CheckboxInput(attrs={"class": "form-check-input"}),
         }

@@ -3,6 +3,7 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.permissions import role_required
+from apps.common.sorting import apply_sort
 from apps.rentals.models import Rental
 
 from .forms import VehicleForm
@@ -27,11 +28,23 @@ def vehicle_list(request):
     if status_filter:
         vehicles = vehicles.filter(status=status_filter)
 
-    return render(request, "vehicles/vehicle_list.html", {
+    sort_map = {
+        "plaka": "plate",
+        "marka": "brand",
+        "model": "model_name",
+        "durum": "status",
+        "muayene": "inspection__next_inspection_date",
+        "bakim": "next_maintenance_date",
+    }
+    vehicles, sort_context = apply_sort(request, vehicles, sort_map)
+
+    context = {
         "vehicles": vehicles,
         "status_choices": Vehicle.Status.choices,
         "selected_status": status_filter,
-    })
+    }
+    context.update(sort_context)
+    return render(request, "vehicles/vehicle_list.html", context)
 
 
 @login_required

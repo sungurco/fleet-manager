@@ -11,10 +11,11 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.accounts.permissions import role_required
+from apps.common.sorting import apply_sort
 from apps.vehicles.models import Vehicle
 
-from .forms import CustomerForm, DriverForm, RentalForm
-from .models import Customer, Driver, Rental
+from .forms import AddressForm, CustomerForm, DriverForm, RentalForm
+from .models import Address, Customer, Driver, Rental
 
 MANAGE_ROLES = ["ADMIN", "OPERASYON"]
 WEEKDAY_LABELS = ["Pzt", "Sal", "Çar", "Per", "Cum", "Cmt", "Paz"]
@@ -30,11 +31,24 @@ def rental_list(request):
     if selected_status:
         rentals = rentals.filter(status=selected_status)
 
+    sort_map = {
+        "kiralama_no": "rental_no",
+        "arac": "vehicle__plate",
+        "musteri": "customer__full_name",
+        "baslangic": "start_date",
+        "bitis": "end_date",
+        "durum": "status",
+        "odeme": "payment_status",
+        "tutar": "total_price",
+    }
+    rentals, sort_context = apply_sort(request, rentals, sort_map)
+
     context = {
         "rentals": rentals,
         "status_choices": Rental.Status.choices,
         "selected_status": selected_status,
     }
+    context.update(sort_context)
     context.update(_build_calendar_context(request))
     return render(request, "rentals/rental_list.html", context)
 
@@ -145,7 +159,8 @@ def _rental_picker_data():
             "status": v.status,
             "status_label": v.get_status_display(),
             "daily_price": str(v.daily_price),
-            "estimated_return_date": v.next_maintenance_date.isoformat() if v.next_maintenance_date else None,
+            "estimated_service_end_date": v.estimated_service_end_date.isoformat() if v.estimated_service_end_date else None,
+            "estimated_resolution_date": v.estimated_resolution_date.isoformat() if v.estimated_resolution_date else None,
         }
         for v in Vehicle.objects.exclude(status=Vehicle.Status.PASIF).order_by("plate")
     ]
@@ -155,6 +170,9 @@ def _rental_picker_data():
             "label": c.full_name,
             "type": c.customer_type,
             "type_label": c.get_customer_type_display(),
+            "search": " ".join(filter(None, [
+                c.full_name, c.company_title, c.customer_number, c.tc_no, c.tax_no, c.phone,
+            ])).lower(),
         }
         for c in Customer.objects.order_by("full_name")
     ]
@@ -282,16 +300,28 @@ def customer_list(request):
             Q(full_name__icontains=q) | Q(phone__icontains=q) | Q(tc_no__icontains=q)
             | Q(tax_no__icontains=q) | Q(company_title__icontains=q)
         )
-    return render(request, "rentals/customer_list.html", {"customers": customers, "q": q})
+
+    sort_map = {
+        "musteri_no": "customer_number",
+        "ad_soyad": "full_name",
+        "tip": "customer_type",
+        "telefon": "phone",
+    }
+    customers, sort_context = apply_sort(request, customers, sort_map)
+
+    context = {"customers": customers, "q": q}
+    context.update(sort_context)
+    return render(request, "rentals/customer_list.html", context)
 
 
 @role_required(MANAGE_ROLES)
 def customer_detail(request, pk):
     customer = get_object_or_404(Customer, pk=pk)
     drivers = customer.drivers.all()
+    addresses = customer.addresses.all()
     rentals = customer.rentals.select_related("vehicle").order_by("-start_date")[:10]
     return render(request, "rentals/customer_detail.html", {
-        "customer": customer, "drivers": drivers, "rentals": rentals,
+        "customer": customer, "drivers": drivers, "addresses": addresses, "rentals": rentals,
     })
 
 
@@ -393,3 +423,47 @@ def driver_quick_create(request, customer_pk):
             "has_license": bool(driver.license_no),
         })
     return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+
+@role_required(MANAGE_ROLES)
+def address_create(request, customer_pk):
+    customer = get_object_or_404(Customer, pk=customer_pk)
+    if request.method == "POST":
+        form = AddressForm(request.POST)
+        if form.is_valid():
+            address = form.save(commit=False)
+            address.customer = customer
+            address.save()
+            messages.success(request, "Adres eklendi.")
+            return redirect("rentals:customer_detail", pk=customer.pk)
+    else:
+        form = AddressForm()
+    return render(request, "rentals/address_form.html", {
+        "form": form, "title": "Yeni Adres", "customer": customer,
+    })
+
+
+@role_required(MANAGE_ROLES)
+def address_update(request, pk):
+    address = get_object_or_404(Address, pk=pk)
+    if request.method == "POST":
+        form = AddressForm(request.POST, instance=address)
+        if form.is_valid():
+            form.save()
+            messages.success(request, "Adres güncellendi.")
+            return redirect("rentals:customer_detail", pk=address.customer_id)
+    else:
+        form = AddressForm(instance=address)
+    return render(request, "rentals/address_form.html", {
+        "form": form, "title": "Adresi Düzenle", "customer": address.customer,
+    })
+
+
+@role_required(MANAGE_ROLES)
+@require_POST
+def address_delete(request, pk):
+    address = get_object_or_404(Address, pk=pk)
+    customer_pk = address.customer_id
+    address.delete()
+    messages.success(request, "Adres silindi.")
+    return redirect("rentals:customer_detail", pk=customer_pk)

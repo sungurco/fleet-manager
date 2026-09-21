@@ -1,4 +1,18 @@
 document.addEventListener('DOMContentLoaded', function () {
+    /* Ad Soyad / Firma Unvanı yazarken otomatik büyük harfe çevir (TR locale-aware,
+       standart toUpperCase() Türkçe ı/İ ayrımını yanlış çevirir). */
+    function attachTurkishUppercase(input) {
+        if (!input) return;
+        input.addEventListener('input', function () {
+            var start = input.selectionStart;
+            var end = input.selectionEnd;
+            input.value = input.value.toLocaleUpperCase('tr-TR');
+            input.setSelectionRange(start, end);
+        });
+    }
+    attachTurkishUppercase(document.getElementById('id_full_name'));
+    attachTurkishUppercase(document.getElementById('id_company_title'));
+
     var typeSelect = document.getElementById('id_customer_type');
     var tuzelFields = document.getElementById('tuzelFields');
     var sahisFields = document.getElementById('sahisFields');

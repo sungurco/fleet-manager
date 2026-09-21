@@ -35,21 +35,25 @@ def _operations_dashboard(request):
     total_vehicles = Vehicle.objects.count()
     available_vehicles = Vehicle.objects.filter(status=Vehicle.Status.MUSAIT).count()
     rented_vehicles = Vehicle.objects.filter(status=Vehicle.Status.KIRADA).count()
-    in_service_vehicles = Vehicle.objects.filter(status__in=[Vehicle.Status.BAKIMDA, Vehicle.Status.HASARLI]).count()
+    service_vehicles = Vehicle.objects.filter(status=Vehicle.Status.SERVISTE).count()
+    damaged_vehicles = Vehicle.objects.filter(status=Vehicle.Status.HASARLI).count()
     passive_vehicles = Vehicle.objects.filter(status=Vehicle.Status.PASIF).count()
 
     occupancy_base = max(total_vehicles, 1)
     occupancy = {
         "available": available_vehicles,
         "rented": rented_vehicles,
-        "service": in_service_vehicles,
+        "service": service_vehicles,
+        "damaged": damaged_vehicles,
         "available_pct": round(available_vehicles * 100 / occupancy_base),
         "rented_pct": round(rented_vehicles * 100 / occupancy_base),
-        "service_pct": round(in_service_vehicles * 100 / occupancy_base),
+        "service_pct": round(service_vehicles * 100 / occupancy_base),
+        "damaged_pct": round(damaged_vehicles * 100 / occupancy_base),
     }
     # CSS conic-gradient stop offsets (cumulative percentages)
     occupancy["rented_stop"] = occupancy["rented_pct"]
-    occupancy["service_stop"] = occupancy["rented_pct"] + occupancy["service_pct"]
+    occupancy["service_stop"] = occupancy["rented_stop"] + occupancy["service_pct"]
+    occupancy["damaged_stop"] = occupancy["service_stop"] + occupancy["damaged_pct"]
 
     active_billable = Rental.objects.filter(status__in=[Rental.Status.DEVAM_EDIYOR, Rental.Status.TAMAMLANDI])
 
@@ -119,7 +123,8 @@ def _operations_dashboard(request):
         "total_vehicles": total_vehicles,
         "available_vehicles": available_vehicles,
         "rented_vehicles": rented_vehicles,
-        "in_service_vehicles": in_service_vehicles,
+        "service_vehicles": service_vehicles,
+        "damaged_vehicles": damaged_vehicles,
         "passive_vehicles": passive_vehicles,
         "occupancy": occupancy,
         "this_month_paid": this_month_paid,

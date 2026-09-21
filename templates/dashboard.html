@@ -46,7 +46,7 @@
         <div class="panel-card p-4 h-100">
             <div class="section-title mb-3">Filo Doluluk Oranı</div>
             <div class="donut-wrap">
-                <div class="donut" style="background: conic-gradient(var(--accent-steel) 0% {{ occupancy.rented_pct }}%, var(--status-cancelled) {{ occupancy.rented_pct }}% {{ occupancy.service_stop }}%, var(--accent-platinum) {{ occupancy.service_stop }}% 100%);">
+                <div class="donut" style="background: conic-gradient(var(--accent-steel) 0% {{ occupancy.rented_stop }}%, var(--status-reserve) {{ occupancy.rented_stop }}% {{ occupancy.service_stop }}%, var(--status-cancelled) {{ occupancy.service_stop }}% {{ occupancy.damaged_stop }}%, var(--accent-platinum) {{ occupancy.damaged_stop }}% 100%);">
                     <div class="donut-center">
                         <div class="donut-value">{{ total_vehicles }}</div>
                         <div class="donut-label">ARAÇ</div>
@@ -54,7 +54,8 @@
                 </div>
                 <div class="donut-legend">
                     <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--accent-steel)"></span> Kirada <strong>{{ rented_vehicles }}</strong></div>
-                    <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--status-cancelled)"></span> Bakımda/Serviste <strong>{{ in_service_vehicles }}</strong></div>
+                    <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--status-reserve)"></span> Serviste <strong>{{ service_vehicles }}</strong></div>
+                    <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--status-cancelled)"></span> Hasarlı <strong>{{ damaged_vehicles }}</strong></div>
                     <div class="donut-legend-item"><span class="donut-legend-dot" style="background:var(--accent-platinum)"></span> Müsait <strong>{{ available_vehicles }}</strong></div>
                 </div>
             </div>

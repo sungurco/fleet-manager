@@ -32,12 +32,90 @@
 html, body {
   background: var(--bg-app);
   color: var(--text-primary);
+  max-width: 100%;
+  overflow-x: hidden;
 }
 
 body {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   min-height: 100vh;
 }
+
+/* ==========================================================================
+   LAYOUT STANDARDI — .layout-container
+
+   Bu proje için sayfa genişliği/kenar boşluğu kuralı TEK bu sınıfta
+   tanımlıdır. Yeni bir sayfa veya bileşen eklerken içeriği doğrudan
+   body'ye ya da kendi özel padding'ine sarmayın; navbar'ın iç kapsayıcısı
+   ve base.html'deki .app-shell zaten bu sınıfı kullanıyor — yeni bir
+   üst-seviye sayfa iskeleti gerekiyorsa aynı `.layout-container` sınıfını
+   (gerekirse .app-shell gibi ek bir sınıfla birlikte) kullanın.
+
+   Davranış:
+   - ≥1024px: içerik --layout-max-width ile sınırlanır ve ortalanır.
+   - <1024px (tablet): max-width kalkar, içerik tam genişliğe yayılır
+     (tablet'te alan kaybı olmasın diye), yatay padding küçülür.
+   - <576px (mobil): yatay padding daha da küçülür (asla 0 olmaz).
+
+   Not: Gantt/Takvim gibi kasıtlı olarak geniş bileşenler kendi
+   overflow-x:auto sarmalayıcısına (örn. .gantt-container) sahiptir ve bu
+   kuraldan etkilenmez — onlar .layout-container'ın İÇİNDE kalıp kendi
+   taşan içeriğini kendi içinde kaydırır.
+   ========================================================================== */
+:root {
+  --layout-max-width: 1520px;
+  --layout-padding-x: 2rem;
+}
+
+.layout-container {
+  width: 100%;
+  max-width: var(--layout-max-width);
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: var(--layout-padding-x);
+  padding-right: var(--layout-padding-x);
+}
+
+@media (max-width: 1023.98px) {
+  .layout-container {
+    max-width: 100%;
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+}
+
+@media (max-width: 575.98px) {
+  .layout-container {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+/* ==========================================================================
+   SIRALANABİLİR TABLO STANDARDI — sortable_th
+
+   Bu projede liste/tablo sayfalarındaki sütun başlıkları düz metin
+   (`<th>Metin</th>`) olarak YAZILMAZ. Onun yerine ortak bileşen kullanılır:
+
+     {% load sortable %}
+     {% sortable_th "Sütun Adı" "field_map_anahtari" %}
+
+   (bkz. templates/partials/sortable_th.html,
+    apps/common/templatetags/sortable.py, apps/common/sorting.py)
+
+   Sıralama backend'de yapılır (Django ORM order_by, ?sort=&direction=
+   query parametreleriyle) — JS ile client-side sıralama YAPILMAZ, çünkü
+   sayfalama veya mevcut filtrelerle (Durum, arama vb.) birlikte
+   kullanıldığında tutarsızlık yaratır.
+
+   Yeni bir liste sayfası eklerken:
+   1. View'da queryset'i apps.common.sorting.apply_sort(request, qs,
+      field_map) ile — Python listesi ise apply_sort_to_list ile — sırala;
+      dönen context'i (current_sort/current_direction) template
+      context'ine ekle.
+   2. Template'te her sıralanabilir <th> yerine yukarıdaki include'u
+      kullan; alan adı view'daki field_map/key_map anahtarıyla eşleşmeli.
+   ========================================================================== */
 
 a { color: var(--accent-platinum); text-decoration: none; }
 a:hover { color: #fff; }
@@ -70,15 +148,77 @@ a:hover { color: #fff; }
   padding: 0.5rem 0.9rem !important;
   border-radius: 6px;
   transition: background 0.15s, color 0.15s;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  white-space: nowrap;
 }
 .app-navbar .nav-link:hover { color: var(--text-primary) !important; background: rgba(255, 255, 255, 0.05); }
-.app-navbar .navbar-user { color: var(--text-secondary); font-size: 0.85rem; }
+.app-navbar .nav-link.active { color: var(--text-primary) !important; background: var(--accent-steel-soft); }
+.app-navbar .nav-link.active .nav-icon { color: var(--accent-platinum); }
+.app-navbar .nav-icon {
+  width: 17px; height: 17px;
+  flex-shrink: 0;
+  color: var(--text-tertiary);
+}
+.app-navbar .nav-link:hover .nav-icon,
+.app-navbar .nav-link.active:hover .nav-icon { color: inherit; }
+.app-navbar .dropdown-toggle::after { margin-left: 0.15rem; vertical-align: 0.1em; }
+.app-navbar .navbar-user { color: var(--text-secondary); font-size: 0.85rem; white-space: nowrap; }
 .app-navbar .btn-logout {
   border: 1px solid var(--border-strong);
   color: var(--text-secondary);
   background: transparent;
 }
 .app-navbar .btn-logout:hover { color: var(--text-primary); border-color: var(--accent-platinum); }
+.app-navbar .navbar-toggler {
+  border-color: var(--border-strong);
+  padding: 0.35rem 0.55rem;
+}
+.app-navbar .navbar-toggler:focus { box-shadow: 0 0 0 2px rgba(74, 111, 165, 0.4); }
+.app-navbar .navbar-side { flex-wrap: wrap; }
+
+.report-dropdown-menu {
+  background: var(--bg-card-raised);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  box-shadow: var(--shadow-card);
+  padding: 0.35rem 0;
+  min-width: 220px;
+}
+.report-dropdown-menu .dropdown-item {
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  padding: 0.5rem 1rem;
+}
+.report-dropdown-menu .dropdown-item:hover { background: rgba(255, 255, 255, 0.06); color: var(--text-primary); }
+.report-dropdown-menu .dropdown-item.disabled {
+  color: var(--text-tertiary) !important;
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  cursor: default;
+  pointer-events: none;
+}
+.report-dropdown-menu .dropdown-item.disabled em {
+  font-style: normal;
+  font-size: 0.7rem;
+  color: var(--text-tertiary);
+  background: rgba(255, 255, 255, 0.06);
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+}
+
+@media (max-width: 991.98px) {
+  .app-navbar .navbar-nav { gap: 0.15rem; }
+  .app-navbar .navbar-side {
+    margin-top: 0.75rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border-subtle);
+    justify-content: space-between;
+    width: 100%;
+  }
+}
 
 /* ---------- Notification bell ---------- */
 .notif-bell {
@@ -131,7 +271,9 @@ a:hover { color: #fff; }
 .notif-empty { padding: 1.25rem 1rem; color: var(--text-secondary); font-size: 0.875rem; text-align: center; }
 
 /* ---------- Layout ---------- */
-.app-shell { padding: 1.85rem 0 3rem; }
+/* .app-shell = .layout-container (genişlik/kenar boşluğu) + sayfaya özel dikey boşluk */
+.app-shell { padding-top: 2.5rem; padding-bottom: 3rem; }
+@media (max-width: 575.98px) { .app-shell { padding-top: 1.5rem; } }
 
 .section-title { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0; }
 .section-sub { color: var(--text-secondary); font-size: 0.85rem; }
@@ -140,6 +282,8 @@ a:hover { color: #fff; }
   background: var(--bg-card);
   border: 1px solid var(--border-subtle);
   border-radius: 12px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 /* ---------- KPI cards ---------- */
@@ -245,8 +389,8 @@ a:hover { color: #fff; }
 .status-MUSAIT::before { background: var(--status-completed); }
 .status-KIRADA { background: var(--status-active-soft); color: #86AAE0; }
 .status-KIRADA::before { background: var(--status-active); }
-.status-BAKIMDA { background: var(--status-reserve-soft); color: #E0BB55; }
-.status-BAKIMDA::before { background: var(--status-reserve); }
+.status-SERVISTE { background: var(--status-reserve-soft); color: #E0BB55; }
+.status-SERVISTE::before { background: var(--status-reserve); }
 .status-HASARLI { background: var(--status-cancelled-soft); color: #D48981; }
 .status-HASARLI::before { background: var(--status-cancelled); }
 .status-PASIF { background: rgba(155, 161, 172, 0.15); color: var(--text-secondary); }
@@ -309,6 +453,23 @@ a:hover { color: #fff; }
 }
 .app-table tbody td { border-color: var(--border-subtle) !important; vertical-align: middle; background: transparent !important; color: var(--text-primary); }
 .app-table tbody tr:hover td { background: rgba(255, 255, 255, 0.02) !important; }
+
+.app-table thead th.sortable-th-cell { padding: 0; }
+.sortable-th {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  width: 100%;
+  padding: 0.5rem 0.5rem;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+}
+.sortable-th:hover { color: var(--text-primary); }
+.sortable-th .sort-arrow { font-size: 0.6rem; line-height: 1; opacity: 0.9; }
+.sortable-th .sort-arrow-inactive { opacity: 0.22; }
+.sortable-th.sortable-th-active { color: var(--text-primary); }
 
 /* ---------- Forms ---------- */
 .form-control, .form-select {
@@ -476,7 +637,7 @@ label.form-label, label { color: var(--text-secondary); font-size: 0.875rem; }
 }
 .searchable-tag.tag-MUSAIT { background: var(--status-completed-soft); color: #7FC2AF; }
 .searchable-tag.tag-KIRADA { background: var(--status-active-soft); color: #86AAE0; }
-.searchable-tag.tag-BAKIMDA { background: var(--status-reserve-soft); color: #E0BB55; }
+.searchable-tag.tag-SERVISTE { background: var(--status-reserve-soft); color: #E0BB55; }
 .searchable-tag.tag-HASARLI { background: var(--status-cancelled-soft); color: #D48981; }
 .searchable-tag.tag-type-SAHIS { background: var(--status-active-soft); color: #86AAE0; }
 .searchable-tag.tag-type-TUZEL { background: var(--status-reserve-soft); color: #E0BB55; }

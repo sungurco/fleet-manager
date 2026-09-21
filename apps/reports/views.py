@@ -4,6 +4,7 @@ from django.db.models import Sum, Count
 from django.shortcuts import render
 
 from apps.accounts.permissions import role_required
+from apps.common.sorting import apply_sort_to_list
 from apps.damages.models import Damage
 from apps.expenses.models import HGSExpense
 from apps.maintenance.models import Inspection, Maintenance
@@ -21,11 +22,22 @@ def occupancy_report(request):
         rented_days = sum(r.rental_days for r in v.rentals.filter(status__in=["DEVAM_EDIYOR", "TAMAMLANDI"]))
         table_rows.append({"vehicle": v, "rented_days": rented_days})
 
+    sort_map = {
+        "plaka": lambda row: row["vehicle"].plate,
+        "marka": lambda row: row["vehicle"].brand,
+        "model": lambda row: row["vehicle"].model_name,
+        "durum": lambda row: row["vehicle"].status,
+        "gun": lambda row: row["rented_days"],
+    }
+    table_rows, sort_context = apply_sort_to_list(request, table_rows, sort_map)
+
     if request.GET.get("export") == "excel":
         rows = [[r["vehicle"].plate, r["vehicle"].brand, r["vehicle"].model_name, r["vehicle"].get_status_display(), r["rented_days"]] for r in table_rows]
         return export_to_excel("doluluk_raporu", ["Plaka", "Marka", "Model", "Durum", "Kiralanan Gün"], rows)
 
-    return render(request, "reports/occupancy_report.html", {"table_rows": table_rows})
+    context = {"table_rows": table_rows}
+    context.update(sort_context)
+    return render(request, "reports/occupancy_report.html", context)
 
 
 @role_required(["ADMIN", "OPERASYON"])

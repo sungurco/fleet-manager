@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load sortable %}
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
     <h2 class="mb-0">Araçlar</h2>
@@ -9,6 +10,8 @@
 
 {% if user.is_admin_role or user.is_operasyon_role %}
 <form method="get" class="row g-2 mb-3">
+    {% if current_sort %}<input type="hidden" name="sort" value="{{ current_sort }}">
+    <input type="hidden" name="direction" value="{{ current_direction }}">{% endif %}
     <div class="col-auto">
         <select name="durum" class="form-select" onchange="this.form.submit()">
             <option value="">Tüm Durumlar</option>
@@ -23,7 +26,15 @@
 <div class="panel-card p-3">
     <table class="table app-table mb-0">
         <thead>
-            <tr><th>Plaka</th><th>Marka</th><th>Model</th><th>Durum</th><th>Sonraki Muayene</th><th>Sonraki Bakım</th><th></th></tr>
+            <tr>
+                {% sortable_th "Plaka" "plaka" %}
+                {% sortable_th "Marka" "marka" %}
+                {% sortable_th "Model" "model" %}
+                {% sortable_th "Durum" "durum" %}
+                {% sortable_th "Sonraki Muayene" "muayene" %}
+                {% sortable_th "Sonraki Bakım" "bakim" %}
+                <th></th>
+            </tr>
         </thead>
         <tbody>
         {% for v in vehicles %}

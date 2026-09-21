@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     "crispy_bootstrap5",
     "widget_tweaks",
     # Uygulama modülleri
+    "apps.common",
     "apps.accounts",
     "apps.vehicles",
     "apps.rentals",

@@ -47,7 +47,8 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     /* ---------- Searchable select (Araç / Müşteri) ---------- */
-    function setupSearchable(selectId, inputId, dropdownId, items, renderLabel, renderRow) {
+    function setupSearchable(selectId, inputId, dropdownId, items, renderLabel, renderRow, matchText) {
+        matchText = matchText || renderLabel;
         var select = document.getElementById(selectId);
         var input = document.getElementById(inputId);
         var dropdown = document.getElementById(dropdownId);
@@ -92,7 +93,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function filterAndRender() {
             var q = input.value.trim().toLowerCase();
-            var filtered = !q ? items : items.filter(function (i) { return renderLabel(i).toLowerCase().indexOf(q) !== -1; });
+            var filtered = !q ? items : items.filter(function (i) { return matchText(i).toLowerCase().indexOf(q) !== -1; });
             renderDropdown(filtered);
         }
 
@@ -122,7 +123,8 @@ document.addEventListener('DOMContentLoaded', function () {
 
     setupSearchable('id_customer', 'customer_search', 'customer_dropdown', DATA.customers || [],
         function (c) { return c.label; },
-        function (c) { return '<span>' + c.label + '</span><span class="searchable-tag tag-type-' + c.type + '">' + c.type_label + '</span>'; }
+        function (c) { return '<span>' + c.label + '</span><span class="searchable-tag tag-type-' + c.type + '">' + c.type_label + '</span>'; },
+        function (c) { return c.search || c.label; }
     );
 
     /* ---------- Araç durumu bilgilendirme uyarısı (Serviste/Hasarlı — engellemeyen) ---------- */
@@ -148,8 +150,8 @@ document.addEventListener('DOMContentLoaded', function () {
         vehicleStatusWarning.textContent = '';
         if (!vehicle) return;
 
-        if (vehicle.status === 'BAKIMDA') {
-            var returnDate = vehicle.estimated_return_date;
+        if (vehicle.status === 'SERVISTE') {
+            var returnDate = vehicle.estimated_service_end_date;
             var startVal = document.getElementById('id_start_date').value;
             if (!returnDate) {
                 setVehicleWarning('caution', 'Bu araç şu an Serviste — tahmini dönüş tarihi girilmemiş, işlem yapmadan önce kontrol edin.');
@@ -159,7 +161,12 @@ document.addEventListener('DOMContentLoaded', function () {
                 setVehicleWarning('info', 'Bu araç şu an Serviste — tahmini dönüş: ' + formatTRDate(returnDate));
             }
         } else if (vehicle.status === 'HASARLI') {
-            setVehicleWarning('danger', 'Bu araç Hasarlı olarak işaretli — dönüş tarihi belirsiz olabilir, kiralama oluşturmadan önce aracın durumunu kontrol edin.');
+            var resolutionDate = vehicle.estimated_resolution_date;
+            var message = 'Bu araç Hasarlı olarak işaretli — dönüş tarihi belirsiz olabilir, kiralama oluşturmadan önce aracın durumunu kontrol edin.';
+            if (resolutionDate) {
+                message += ' Tahmini çözüm tarihi: ' + formatTRDate(resolutionDate) + ' (kesin değildir).';
+            }
+            setVehicleWarning('danger', message);
         }
     }
 
